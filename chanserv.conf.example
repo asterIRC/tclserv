@@ -1,0 +1,3 @@
+set cs(nick) "Mars"
+set cs(ident) "services"
+set cs(host) "umbrellix.tk"

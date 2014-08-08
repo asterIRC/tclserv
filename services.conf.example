@@ -1,0 +1,4 @@
+set numeric "53"
+set servername "channels."
+set password "laoo,rpe"
+p10-burst [set sock [connect 127.0.0.1 4400 p10-main]]
