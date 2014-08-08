@@ -1,0 +1,84 @@
+sendUid $::sock "T" "trigserv" "services." "services." 37 "Channel Spam Reduction and Trigger Services"
+#putmode $::sock 37 "T" "-d" "" ""
+foreach {chan is} [nda get "trigserv/regchan"] {
+	if {1!=$is} {continue}
+	putjoin $::sock 37 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
+	tnda set "channels/$chan/ts" [nda get "regchan/$chan/ts"]
+}
+bind request "t" "-" trigservjoin
+bind request "trigserv" "-" trigservjoin
+#bind join "-" "-" trigservup
+#bind part "-" "-" trigservdown
+bind pub "-" "!addtrig" trigservdochan
+bind evnt "-" "chanmsg" trigservtest
+
+proc ndaenc {n} {
+	return [string map {/ [} [::base64::encode [string tolower $n]]]
+}
+
+proc ndadec {n} {
+	return [::base64::decode [string map {[ /} $n]]
+}
+
+proc trigservjoin {chan msg} {
+	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
+	putjoin $::sock 37 $chan [nda get "regchan/$ndacname/ts"]
+	nda set "trigserv/regchan/$ndacname" 1
+}
+
+proc trigservdochan {cname msg} {
+	set chan [string map {/ [} [::base64::encode [string tolower $cname]]]
+	set from [lindex $msg 0 0]
+	set trigname [lindex $msg 1 0]
+	set trigtype [lindex $msg 1 1]
+	set trigcriteria [lindex $msg 1 2]
+	set trigaction [lrange [lindex $msg 1] 3 end]
+	if {200>[nda get "regchan/$chan/levels/[string tolower [tnda get "login/$from"]]"]} {
+		privmsg $::sock 37 $cname "You must be at least op to set a trigger on the channel."
+		return
+	}
+	nda set "trigserv/trig/$chan/[ndaenc $trigtype]/[ndaenc $trigname]/[ndaenc $trigcriteria]" $trigaction
+}
+
+proc trigservdecay {target} {
+	tnda set "trigserv/flood/$target" [expr {[tnda get "trigserv/flood/$target"] - 1}]
+}
+
+proc trigservincr {target} {
+	tnda set "trigserv/flood/$target" [expr {[tnda get "trigserv/flood/$target"] + 1}]
+}
+
+proc trigservtest {cname msg} {
+	set chan [string map {/ [} [::base64::encode [string tolower $cname]]]
+	set from [lindex $msg 0 0]
+	set trigcmd [lindex $msg 1 0]
+	set trigline [join [lrange [lindex $msg 1] 0 end] " "]
+	foreach {type _} [nda get "trigserv/trig/$chan"] {
+		foreach {tname _} [nda get "trigserv/trig/$chan/$type"] {
+			foreach {criterion action} [nda get "trigserv/trig/$chan/$type/$tname"] {
+				set crit [split [ndadec $criterion] ":"]
+				trigservcriterion $chan $type $tname $crit $action $trigcmd $trigline $from
+			}
+		}
+	}
+}
+
+proc trigservcriterion {chan type tname criterion action trigcmd trigline from} {
+	switch -nocase -- [lindex $criterion 0] {
+		"flood" {
+			trigservincr $chan
+			puts stdout [tnda get "trigserv/flood/$chan"]
+			after [expr {[lindex $criterion 2] * 1000}] trigservdecay $chan
+			if {[tnda get "trigserv/flood/$chan"] >= [lindex $criterion 1]} {
+				privmsg $::sock 37 [ndadec $chan] "Message flood detected; setting +mi for 60 seconds"
+				putmode $::sock 37 [ndadec $chan] "+mi" "" [tnda get "channels/$chan/ts"]
+				after 60000 {putmode $::sock 37 [ndadec $chan] "-mi" "" [tnda get "channels/$chan/ts"]}
+			}
+		}
+		"cmd" {
+			if {$trigcmd == [lindex $criterion 1]} {
+				privmsg $::sock 37 [ndadec $chan] [join [list "\002[tnda get "nick/$from"]\002:" $action] " "]
+			}
+		}
+	}
+}

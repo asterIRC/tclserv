@@ -3,7 +3,7 @@ proc sendUid {sck nick ident host dhost uid {realname "* Unknown *"}} {
 	set sendid [b64e $uid]
 	set sendnn [string repeat "A" [expr {3-[string length $sendid]}]]
 	append sendnn $sendid
-	set sl [format "%s N %s 1 %s %s %s +oikd AAAAAA %s%s :%s" $sid $nick [clock format [clock seconds] -format %s] $ident $host $sid $sendnn $realname]
+	set sl [format "%s N %s 1 %s %s %s +oik AAAAAA %s%s :%s" $sid $nick [clock format [clock seconds] -format %s] $ident $host $sid $sendnn $realname]
 	tnda set "intclient/${sid}${sendnn}" $uid
 	puts $sck $sl
 	puts stdout $sl
@@ -15,6 +15,14 @@ proc privmsg {sck uid targ msg} {
 	set sendnn [string repeat "A" [expr {3-[string length $sendid]}]]
 	append sendnn $sendid
 	puts $sck [format "%s%s P %s :%s" $sid $sendnn $targ $msg]
+}
+
+proc kick {sck uid targ tn msg} {
+	global sid
+	set sendid [b64e $uid]
+	set sendnn [string repeat "A" [expr {3-[string length $sendid]}]]
+	append sendnn $sendid
+	puts $sck [format "%s%s K %s %s :%s" $sid $sendnn $targ $tn $msg]
 }
 
 proc notice {sck uid targ msg} {
@@ -53,12 +61,12 @@ proc putjoin {sck uid targ ts} {
 	set sendnn [string repeat "A" [expr {3-[string length $sendid]}]]
 	append sendnn $sendid
 	puts $sck [format "%s B %s %s %s%s:o" $sid $targ $ts $sid $sendnn]
+	puts stdout [format "%s B %s %s %s%s:o" $sid $targ $ts $sid $sendnn]
+
 }
 
 proc callbind {type client comd args} {
-	if {""!=[tnda get "binds/$type/$client/$comd"]} {[tnda get "binds/$type/$client/$comd"] [lindex $args 0] [lrange $args 1 end]} {
-		puts stdout "bind called $type $client $comd but no one to send it to!"
-	}
+	if {""!=[tnda get "binds/$type/$client/$comd"]} {[tnda get "binds/$type/$client/$comd"] [lindex $args 0] [lrange $args 1 end]}
 }
 
 proc p10-main {sck} {
@@ -69,16 +77,28 @@ proc p10-main {sck} {
 	set gotsplitwhere [string first " :" $line]
 	if {$gotsplitwhere==-1} {set comd [split $line " "]} {set comd [split [string range $line 0 [expr {$gotsplitwhere - 1}]] " "]}
 	set payload [split [string range $line [expr {$gotsplitwhere + 2}] end] " "]
-	puts stdout [join $comd "<->"]
+	puts stdout [join $comd " "]
 	switch -nocase -- [lindex $comd 1] {
 		"P" {
 			if {[string index [lindex $comd 2] 0] == "#"} {
 				set client chan
+				callbind pub "-" [string tolower [lindex $payload 0]] [lindex $comd 2] [lindex $comd 0] [lrange $payload 1 end]
+				callbind evnt "-" "chanmsg" [lindex $comd 0] [lindex $comd 2] [lrange $payload 0 end]
 			} {
 				set client [tnda get "intclient/[lindex $comd 2]"]
+				callbind msg $client [string tolower [lindex $payload 0]] [lindex $comd 0] [lrange $payload 1 end]
 			}
+		}
 
-			callbind msg $client [string tolower [lindex $payload 0]] [lindex $comd 0] [lrange $payload 1 end]
+		"O" {
+			if {[string index [lindex $comd 2] 0] == "#"} {
+				set client chan
+				callbind pubnotc "-" [string tolower [lindex $payload 0]] [lindex $comd 2] [lindex $comd 0] [lrange $payload 1 end]
+				callbind pubnotc-m "-" [string tolower [lindex $payload 0]] [lindex $comd 2] [lindex $comd 0] [lrange $payload 1 end]
+			} {
+				set client [tnda get "intclient/[lindex $comd 2]"]
+				callbind notc $client [string tolower [lindex $payload 0]] [lindex $comd 0] [lrange $payload 1 end]
+			}
 		}
 
 		"M" {
@@ -105,6 +125,8 @@ proc p10-main {sck} {
 
 		"C" {
 			callbind create "-" "-" [lindex $comd 2] [lindex $comd 0]
+			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
+			tnda set "channels/$chan/ts" [lindex $comd 3]
 		}
 
 		"OM" {
@@ -130,10 +152,14 @@ proc p10-main {sck} {
 		}
 
 		"B" {
+			puts $sck "$sid EB"
 			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
 			puts stdout "$chan"
 			if {[string index [lindex $comd 4] 0] == "+"} {
 				set four 5
+				if {[string match "*l*" [lindex $comd 4]]} {incr four}
+				if {[string match "*L*" [lindex $comd 4]]} {incr four}
+				if {[string match "*k*" [lindex $comd 4]]} {incr four}
 			} {
 				set four 4
 			}
@@ -143,13 +169,21 @@ proc p10-main {sck} {
 				set un [lindex $n 0]
 				set uo [lindex $n 1]
 				if {""!=$uo} {tnda set "channels/$chan/modes/$un" $uo}
+				callbind join "-" "-" [lindex $comd 2] $un
 			}
 
 		}
 
+		"J" {
+			callbind join "-" "-" [lindex $comd 2] [lindex $comd 0]
+		}
+
+		"L" {
+			callbind part "-" "-" [lindex $comd 2] [lindex $comd 0]
+		}
+
 		"EB" {
 			puts $sck "$sid EA"
-			puts $sck "$sid EB"
 		}
 
 		"N" {
@@ -224,9 +258,9 @@ proc p10-burst {sck} {
 	set sid [string repeat "A" [expr {2-[b64e $::numeric]}]]
 	append sid [b64e $::numeric]
 	puts $sck "PASS :$password"
-	puts $sck "SERVER $servername 0 [clock format [clock seconds] -format %s] [clock format [clock seconds] -format %s] J10 $sid\]\]\] +s :Services for IRC Networks"
+	puts $sck "SERVER $servername 0 [clock format [clock seconds] -format %s] [clock format [clock seconds] -format %s] J10 $sid\]\]\] 0 :Services for IRC Networks"
 	puts stdout "PASS :$password"
-	puts stdout "SERVER $servername 0 [clock format [clock seconds] -format %s] [clock format [clock seconds] -format %s] J10 $sid\]\]\] +s :Services for IRC Networks"
+	puts stdout "SERVER $servername 0 [clock format [clock seconds] -format %s] [clock format [clock seconds] -format %s] J10 $sid\]\]\] 0 :Services for IRC Networks"
 }
 
 
