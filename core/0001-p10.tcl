@@ -15,6 +15,7 @@ proc privmsg {sck uid targ msg} {
 	set sendnn [string repeat "A" [expr {3-[string length $sendid]}]]
 	append sendnn $sendid
 	puts $sck [format "%s%s P %s :%s" $sid $sendnn $targ $msg]
+	puts stdout [format "%s%s P %s :%s" $sid $sendnn $targ $msg]
 }
 
 proc kick {sck uid targ tn msg} {
@@ -40,11 +41,17 @@ proc setacct {sck targ msg} {
 }
 
 proc bind {type client comd script} {
-	tnda set "binds/$type/$client/$comd" $script
+	set moretodo 1
+	while {0!=$moretodo} {
+		set bindnum [rand 1 10000000]
+		if {[tnda get "binds/$type/$client/$comd/$bindnum"]!=""} {} {set moretodo 0}
+	}
+	tnda set "binds/$type/$client/$comd/$bindnum" $script
+	return $bindnum
 }
 
-proc unbind {type client comd} {
-	tnda set "binds/$type/$client/$comd" ""
+proc unbind {type client comd id} {
+	tnda set "binds/$type/$client/$comd/$id" ""
 }
 
 proc putmode {sck uid targ mode parm ts} {
@@ -66,7 +73,8 @@ proc putjoin {sck uid targ ts} {
 }
 
 proc callbind {type client comd args} {
-	if {""!=[tnda get "binds/$type/$client/$comd"]} {[tnda get "binds/$type/$client/$comd"] [lindex $args 0] [lrange $args 1 end]}
+	if {""!=[tnda get "binds/$type/$client/$comd"]} {foreach {id script} [tnda get "binds/$type/$client/$comd"] {$script [lindex $args 0] [lrange $args 1 end]};return}
+	if {""!=[tnda get "binds/$type/-/$comd"]} {foreach {id script} [tnda get "binds/$type/-/$comd"] {$script [lindex $args 0] [lrange $args 1 end]};return}
 }
 
 proc p10-main {sck} {
@@ -125,6 +133,7 @@ proc p10-main {sck} {
 
 		"C" {
 			callbind create "-" "-" [lindex $comd 2] [lindex $comd 0]
+			callbind join "-" "-" [lindex $comd 2] [lindex $comd 0]
 			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
 			tnda set "channels/$chan/ts" [lindex $comd 3]
 		}
@@ -221,10 +230,10 @@ proc p10-main {sck} {
 				tnda set "oper/[lindex $comd $num]" $oper
 				tnda set "ident/[lindex $comd $num]" [lindex $comd 5]
 				tnda set "rhost/[lindex $comd $num]" [lindex $comd 6]
-				#callbind conn "-" "-" [lindex $comd $num]
+				callbind conn "-" "-" [lindex $comd $num]
 			} {
 				puts $sck "$sid O #o :nch [tnda get "nick/[lindex $comd 0]"] [lindex $comd 2]"
-				#callbind nch "-" "-" [lindex $comd $num] [tnda get "nick/[lindex $comd 0]"] [lindex $comd 2]
+				callbind nch "-" "-" [lindex $comd $num] [tnda get "nick/[lindex $comd 0]"] [lindex $comd 2]
 				tnda set "nick/[lindex $comd 0]" [lindex $comd 2]
 			}
 		}

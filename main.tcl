@@ -15,6 +15,7 @@ proc pwhash {pass} {
 }
 
 proc rand {minn maxx} {
+	if {$minn==$maxx} {return $maxx}
 	set maxnum [expr {$maxx - $minn}]
 	set fp [open /dev/urandom r]
 	set bytes [read $fp 6]
