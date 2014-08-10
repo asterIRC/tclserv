@@ -1,3 +1,5 @@
+source chanserv.conf
+
 bind $::sock mode "-" "+" bitchopcheck
 bind $::sock mode "-" "-" protectopcheck
 bind $::sock join "-" "-" autoopcheck

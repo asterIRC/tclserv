@@ -32,9 +32,13 @@ channel protection bot.
                    operators on the chattr list.
         autohalfop Automatically give half operator to all channel
                    half operators on the chattr list.
-        ... and so on with voice and the various bitches, with a new one:
+        ... and so on with voice and the various bitches, with a few new ones:
         operit     Automatically op all IRC operators, halfop
                    all network halfops and voice all network voices.
+        topiclock  Locks the channel topic to be whatever you
+                   set with topic.
+
+topic 
                 
 lsu channel
         View the userlist for a channel.

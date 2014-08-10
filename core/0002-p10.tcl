@@ -20,6 +20,15 @@ proc ::p10::sendSid {sck sname sid {realname "In use by Services"}} {
 	puts $sck $sl
 }
 
+proc ::p10::topic {sck uid targ topic} {
+	set sid [string repeat "A" [expr {2-[string length [b64e $::numeric]]}]]
+	append sid [b64e $::numeric]
+	set sendid [b64e $uid]
+	set sendnn [string repeat "A" [expr {3-[string length $sendid]}]]
+	append sendnn $sendid
+	puts $sck [format "%s%s T %s :%s" $sid $sendnn $targ $topic]
+}
+
 proc ::p10::privmsg {sck uid targ msg} {
 	global sid
 	set sendid [b64e $uid]
@@ -155,6 +164,10 @@ proc ::p10::irc-main {sck} {
 			callbind $sck join "-" "-" [lindex $comd 2] [lindex $comd 0] $::netname($sck)
 			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
 			tnda set "channels/$::netname($sck)/$chan/$::netname($sck)/ts" [lindex $comd 3]
+		}
+
+		"T" {
+			callbind $sck topic "-" "-" [lindex $comd 2] [join $payload " "]
 		}
 
 		"OM" {

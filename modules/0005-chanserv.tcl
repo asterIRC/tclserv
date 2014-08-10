@@ -1,4 +1,3 @@
-source chanserv.conf
 $::maintype sendUid $sock $cs(nick) $cs(ident) $cs(host) $cs(host) 77 "Channels Server"
 bind $::sock msg 77 "register" regchan
 bind $::sock msg 77 "adduser" adduserchan
@@ -15,18 +14,39 @@ bind $::sock msg 77 "hello" regnick
 bind $::sock msg 77 "chpass" chpassnick
 bind $::sock msg 77 "login" idnick
 bind $::sock msg 77 "help" chanhelp
+bind $::sock msg 77 "topic" chantopic
 bind $::sock msg 77 "cookie" authin
 bind $::sock msg 77 "cauth" cookieauthin
 bind $::sock mode "-" "+" checkop
 bind $::sock mode "-" "-" checkdeop
+bind $::sock topic "-" "-" checktopic
 bind $::sock create "-" "-" checkcreate
+
+proc checktopic {chan topic} {
+	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
+	if {[channel get $chan topiclock]} {$::maintype topic $::sock 77 "$chan" "[nda get "regchan/$ndacname/topic"]"}
+}
+
+proc chantopic {from msg} {
+	set cname [lindex $msg 0 0]
+	set topic [join [lrange [lindex $msg 0] 1 end] " "]
+	if {""==[tnda get "login/$::netname($::sock)/$from"]} {$::maintype notice $::sock 77 $from "You fail at life.";return}
+	set ndacname [string map {/ [} [::base64::encode [string tolower $cname]]]
+	if {150>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock)/$from"] lmno|lmno $cname]} {
+		$::maintype privmsg $::sock 77 $cname "You must be at least halfop to change the stored channel topic."
+		return
+	}
+	nda set "regchan/$ndacname/topic" "$topic"
+	$::maintype topic $::sock 77 "$cname" "$topic"
+	$::maintype privmsg $::sock 77 "$cname" "[tnda get "nick/$::netname($::sock)/$from"] ([tnda get "login/$::netname($::sock)/$from"]) changed topic."
+}
 
 proc authin {from msg} {
 	set uname [lindex $msg 0 0]
 	if {[string first "/" $uname] != -1} {return}
 	$::maintype notice $::sock 77 $from "CHALLENGE [set cookie [b64e [rand 1000000000 9999999999]]] SHA1"
 	tnda set "cookieauth/$from/cookie" $cookie
-	tnda set "cookieauth/$from/name" $uname
+	tnda set "cookieauth/$from/name" "$uname"
 }
 
 proc cookieauthin {from msg} {
@@ -143,6 +163,7 @@ foreach {chan _} [nda get "regchan"] {
 	$::maintype putjoin $::sock 77 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
 	tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname($::sock)/ts"]
 	$::maintype putmode $::sock 77 [::base64::decode [string map {[ /} $chan]] "+nt" "" [nda get "regchan/$chan/ts"]
+	if {[channel get [::base64::decode [string map {[ /} $chan]] topiclock]} {$::maintype topic $::sock 77 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/topic"]}
 }
 
 proc checkop {mc ftp} {
