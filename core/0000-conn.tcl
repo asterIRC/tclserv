@@ -7,3 +7,5 @@ proc connect {addr port script} {
 	fileevent $sck readable [concat $script $sck]
 	return $sck
 }
+
+source services.conf

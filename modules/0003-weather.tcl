@@ -1,15 +1,15 @@
-sendUid $::sock "W" "weather" "services." "services." 57 "Weather Services"
+p10 sendUid $::sock "W" "weather" "services." "services." 57 "Weather Services"
 foreach {chan is} [nda get "weather/regchan"] {
 	if {1!=$is} {continue}
-	putjoin $::sock 57 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
-	tnda set "channels/$chan/ts" [nda get "regchan/$chan/ts"]
+	p10 putjoin $::sock 57 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
+	tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname($::sock)/ts"]
 }
-bind request "w" "-" weatherjoin
-bind request "weather" "-" weatherjoin
+bind $::sock request "w" "-" weatherjoin
+bind $::sock request "weather" "-" weatherjoin
 
 proc weatherjoin {chan msg} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
-	putjoin $::sock 57 $chan [nda get "regchan/$ndacname/ts"]
+	p10 putjoin $::sock 57 $chan [nda get "regchan/$ndacname/ts"]
 	nda set "weather/regchan/$ndacname" 1
 }
 
@@ -44,14 +44,14 @@ namespace eval wunderground {
 ##############################################################################################
 ##  ##                           End Setup.                                              ## ##
 ##############################################################################################
-  bind pub "-" [string trimleft $wunderground::cmdchar]weather wunderground::tclservwe
-  bind pub "-" [string trimleft $wunderground::cmdchar]wz wunderground::tclservwe
-  bind pub "-" [string trimleft $wunderground::cmdchar]forecast wunderground::tclservfc
+  bind $::sock pub "-" [string trimleft $wunderground::cmdchar]weather wunderground::tclservwe
+  bind $::sock pub "-" [string trimleft $wunderground::cmdchar]wz wunderground::tclservwe
+  bind $::sock pub "-" [string trimleft $wunderground::cmdchar]forecast wunderground::tclservfc
 }
 
 proc wunderground::tclservwe {cname msg} {
-	set nick [tnda get "nick/[lindex $msg 0 0]"]
-	set host "[tnda get "ident/[lindex $msg 0 0]"]@[tnda get "vhost/[lindex $msg 0 0]"]"
+	set nick [tnda get "nick/$::netname($::sock)/[lindex $msg 0 0]"]
+	set host "[tnda get "ident/[lindex $msg 0 0]"]@[tnda get "vhost/$::netname($::sock)/[lindex $msg 0 0]"]"
 	set comd "weather"
 	set hand ""
 	set text [join [lindex $msg 1] " "]
@@ -59,8 +59,8 @@ proc wunderground::tclservwe {cname msg} {
 }
 
 proc wunderground::tclservfc {cname msg} {
-	set nick [tnda get "nick/[lindex $msg 0 0]"]
-	set host "[tnda get "ident/[lindex $msg 0 0]"]@[tnda get "vhost/[lindex $msg 0 0]"]"
+	set nick [tnda get "nick/$::netname($::sock)/[lindex $msg 0 0]"]
+	set host "[tnda get "ident/[lindex $msg 0 0]"]@[tnda get "vhost/$::netname($::sock)/[lindex $msg 0 0]"]"
 	set comd "forecast"
 	set hand ""
 	set text [join [lindex $msg 1] " "]
@@ -190,7 +190,7 @@ proc wunderground::msg {chan logo textf text} {
   set counter 0
   while {$counter <= [llength $text]} {
     if {[lindex $text $counter] != ""} {
-      privmsg $::sock 57 $chan "${logo} ${textf}[string map {\\\" \"} [lindex $text $counter]]"
+      p10 privmsg $::sock 57 $chan "${logo} ${textf}[string map {\\\" \"} [lindex $text $counter]]"
     }
     incr counter
   }

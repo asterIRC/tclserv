@@ -1,4 +1,0 @@
-#sendUid $::sock "g" "bmotion" "services." "services." 27 "A test of ported BMotion to TCLServ"
-set bmnumeric 77
-mysrc ./scripts/bmotion/bMotion.tcl
-puts stdout "loaded bmotion... i think"

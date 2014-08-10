@@ -1,17 +1,17 @@
-sendUid $::sock "Q" "quoteserv" "services." "services." 107 "Quote Storage Services"
+p10 sendUid $::sock "Q" "quoteserv" "services." "services." 107 "Quote Storage Services"
 foreach {chan is} [nda get "quoteserv/regchan"] {
 	if {1!=$is} {continue}
-	putjoin $::sock 107 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
-	tnda set "channels/$chan/ts" [nda get "regchan/$chan/ts"]
+	p10 putjoin $::sock 107 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
+	tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname($::sock)/ts"]
 }
-bind request "q" "-" quoteservjoin
-bind request "quoteserv" "-" quoteservjoin
-bind pub "-" "!quote" quoteservdo
-bind pub "-" "!q" quoteservdo
+bind $::sock request "q" "-" quoteservjoin
+bind $::sock request "quoteserv" "-" quoteservjoin
+bind $::sock pub "-" "!quote" quoteservdo
+bind $::sock pub "-" "!q" quoteservdo
 
 proc quoteservjoin {chan msg} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
-	putjoin $::sock 107 $chan [nda get "regchan/$ndacname/ts"]
+	p10 putjoin $::sock 107 $chan [nda get "regchan/$ndacname/ts"]
 	nda set "quoteserv/regchan/$ndacname" 1
 }
 
@@ -31,37 +31,37 @@ proc quoteservdo {chan msg} {
 		"sea*" {
 			set ptn "*[join $para " "]*"
 			set qts [quotesearch $chan $ptn]
-			if {[llength $qts]} {privmsg $::sock 107 $chan "\[\002Quotes\002\] Found quotes numbered #[join $qts ",#"]"} {
-				privmsg $::sock 107 $chan "\[\002Quotes\002\] No quotes found for pattern"
+			if {[llength $qts]} {p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Found quotes numbered #[join $qts ",#"]"} {
+				p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] No quotes found for pattern"
 			}
 		}
 		"vi*1st*ma*" {
 			set ptn "*[join $para " "]*"
 			set qts [quotesearch $chan $ptn]
-			if {[llength $qts]} {set qtn [lindex $qts 0];privmsg $::sock 107 $chan "\[\002Quotes\002\] Quote number #$qtn:";privmsg $::sock 107 $chan "\[\002Quotes\002\] [nda get "quoteserv/quotes/$ndacname/$qtn"]"} {
-				privmsg $::sock 107 $chan "\[\002Quotes\002\] No quotes found for pattern"
+			if {[llength $qts]} {set qtn [lindex $qts 0];p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Quote number #$qtn:";p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] [nda get "quoteserv/quotes/$ndacname/$qtn"]"} {
+				p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] No quotes found for pattern"
 			}
 		}
 		"ad*" {
 			set qt [join $para " "]
-			set qtn [expr {([llength [nda get "quoteserv/quotes/$ndacname"]]/2)+2}]
+			set qtn [expr {([llength [nda get "quoteserv/quotes/$ndacname"]]/2)+3}]
 			nda set "quoteserv/quotes/$ndacname/$qtn" $qt
-			privmsg $::sock 107 $chan "\[\002Quotes\002\] Added quote number #$qtn to database."
+			p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Added quote number #$qtn to database."
 		}
 		"de*" {
 			set qtn "[lindex $para 0]"
-			if {![string is integer $qtn]} {privmsg $::sock 107 $chan "\[\002Quotes\002\] Please use a valid integer (without the #)"}
-			if {150>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$from"]]"]} {privmsg $::sock 107 $chan "\[\002Quotes\002\] Check your privilege."}
+			if {![string is integer $qtn]} {p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Please use a valid integer (without the #)"}
+			if {150>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"]} {p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Check your privilege."}
 			nda set "quoteserv/quotes/$ndacname/$qtn" ""
-			privmsg $::sock 107 $chan "\[\002Quotes\002\] Blanked quote number #$qtn in database."
+			p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Blanked quote number #$qtn in database."
 		}
 		"vi*" {
 			set qtn "[lindex $para 0]"
-			if {![string is integer $qtn]} {privmsg $::sock 107 $chan "\[\002Quotes\002\] Please use a valid integer (without the #)"}
+			if {![string is integer $qtn]} {p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Please use a valid integer (without the #)"}
 			set qt [nda get "quoteserv/quotes/$ndacname/$qtn"]
 			if {$qt != ""} {
-				privmsg $::sock 107 $chan "\[\002Quotes\002\] Quote number #$qtn:"
-				privmsg $::sock 107 $chan "\[\002Quotes\002\] $qt"
+				p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] Quote number #$qtn:"
+				p10 privmsg $::sock 107 $chan "\[\002Quotes\002\] $qt"
 			}
 		}
 		"he*" {
@@ -73,7 +73,7 @@ proc quoteservdo {chan msg} {
 !quote del - Delete quote. Requires halfops or above.
 End of help for Q.}
 			foreach {helpline} [split $helpfile "\r\n"] {
-				notice $::sock 107 $from $helpline
+				p10 notice $::sock 107 $from $helpline
 			}
 		}
 	}

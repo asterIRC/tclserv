@@ -1,0 +1,54 @@
+  ____ _                 ____                    _   _      _
+ / ___| |__   __ _ _ __ / ___|  ___ _ ____   __ | | | | ___| |_ __
+| |   | '_ \ / _` | '_ \\___ \ / _ \ '__\ \ / / | |_| |/ _ \ | '_ \
+| |___| | | | (_| | | | |___) |  __/ |   \ V /  |  _  |  __/ | |_) |
+ \____|_| |_|\__,_|_| |_|____/ \___|_|    \_/   |_| |_|\___|_| .__/
+                                                             |_|
+
+Welcome to ChanServ (or whoever you messaged), your trusty
+channel protection bot.
+
+Commands available:
+
+hello username password
+        Create an account. You are automatically logged in.
+        
+login username password
+        Log into an existing account.
+        
+convertop channel
+        Convert access list levels to flags. Mostly useful for
+        generating proper autoop lists.
+        
+chattr username flags channel
+        Change a flag on a user in a channel (or if you are an
+        ircop and no channel is specified, the bot itself)
+        
+chanset channel eggdrop-style chanset
+        Change a chanset. Chansets are settings on a channel
+        that change chanserv's behaviour.
+        Currently available chansets:
+        autoop     Automatically give operator to all channel
+                   operators on the chattr list.
+        autohalfop Automatically give half operator to all channel
+                   half operators on the chattr list.
+        ... and so on with voice and the various bitches, with a new one:
+        operit     Automatically op all IRC operators, halfop
+                   all network halfops and voice all network voices.
+                
+lsu channel
+        View the userlist for a channel.
+
+up channel
+        Gives you the appropriate privileges for your current login
+        name on the channel.
+
+
+Channel commands available
+
+@up
+        Gives you appropriate privileges for the current channel.
+      
+@request funserv bot
+        Request the named service bot to the current channel. You
+        need at least halfop.

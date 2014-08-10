@@ -3,7 +3,7 @@ sendUid $::sock "T" "trigserv" "services." "services." 37 "Channel Spam Reductio
 foreach {chan is} [nda get "trigserv/regchan"] {
 	if {1!=$is} {continue}
 	putjoin $::sock 37 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
-	tnda set "channels/$chan/ts" [nda get "regchan/$chan/ts"]
+	tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname($::sock)/ts"]
 }
 bind request "t" "-" trigservjoin
 bind request "trigserv" "-" trigservjoin
@@ -33,7 +33,7 @@ proc trigservdochan {cname msg} {
 	set trigtype [lindex $msg 1 1]
 	set trigcriteria [lindex $msg 1 2]
 	set trigaction [lrange [lindex $msg 1] 3 end]
-	if {200>[nda get "regchan/$chan/levels/[string tolower [tnda get "login/$from"]]"]} {
+	if {200>[nda get "regchan/$chan/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"]} {
 		privmsg $::sock 37 $cname "You must be at least op to set a trigger on the channel."
 		return
 	}
@@ -41,11 +41,11 @@ proc trigservdochan {cname msg} {
 }
 
 proc trigservdecay {target} {
-	tnda set "trigserv/flood/$target" [expr {[tnda get "trigserv/flood/$target"] - 1}]
+	tnda set "trigserv/flood/$target" [expr {[tnda get "trigserv/flood/$::netname($::sock)/$::netname($::sock)/$target"] - 1}]
 }
 
 proc trigservincr {target} {
-	tnda set "trigserv/flood/$target" [expr {[tnda get "trigserv/flood/$target"] + 1}]
+	tnda set "trigserv/flood/$target" [expr {[tnda get "trigserv/flood/$::netname($::sock)/$::netname($::sock)/$target"] + 1}]
 }
 
 proc trigservtest {cname msg} {
@@ -67,17 +67,17 @@ proc trigservcriterion {chan type tname criterion action trigcmd trigline from} 
 	switch -nocase -- [lindex $criterion 0] {
 		"flood" {
 			trigservincr $chan
-			puts stdout [tnda get "trigserv/flood/$chan"]
+			puts stdout [tnda get "trigserv/flood/$::netname($::sock)/$chan"]
 			after [expr {[lindex $criterion 2] * 1000}] trigservdecay $chan
-			if {[tnda get "trigserv/flood/$chan"] >= [lindex $criterion 1]} {
+			if {[tnda get "trigserv/flood/$::netname($::sock)/$chan"] >= [lindex $criterion 1]} {
 				privmsg $::sock 37 [ndadec $chan] "Message flood detected; setting +mi for 60 seconds"
-				putmode $::sock 37 [ndadec $chan] "+mi" "" [tnda get "channels/$chan/ts"]
-				after 60000 {putmode $::sock 37 [ndadec $chan] "-mi" "" [tnda get "channels/$chan/ts"]}
+				putmode $::sock 37 [ndadec $chan] "+mi" "" [tnda get "channels/$chan/$::netname($::sock)/ts"]
+				after 60000 {putmode $::sock 37 [ndadec $chan] "-mi" "" [tnda get "channels/$chan/$::netname($::sock)/ts"]}
 			}
 		}
 		"cmd" {
 			if {$trigcmd == [lindex $criterion 1]} {
-				privmsg $::sock 37 [ndadec $chan] [join [list "\002[tnda get "nick/$from"]\002:" $action] " "]
+				privmsg $::sock 37 [ndadec $chan] [join [list "\002[tnda get "nick/$::netname($::sock)/$from"]\002:" $action] " "]
 			}
 		}
 	}
