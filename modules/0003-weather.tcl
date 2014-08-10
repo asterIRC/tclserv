@@ -1,7 +1,7 @@
-p10 sendUid $::sock "W" "weather" "services." "services." 57 "Weather Services"
+$::maintype sendUid $::sock "W" "weather" "services." "services." 57 "Weather Services"
 foreach {chan is} [nda get "weather/regchan"] {
 	if {1!=$is} {continue}
-	p10 putjoin $::sock 57 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
+	$::maintype putjoin $::sock 57 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
 	tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname($::sock)/ts"]
 }
 bind $::sock request "w" "-" weatherjoin
@@ -9,7 +9,7 @@ bind $::sock request "weather" "-" weatherjoin
 
 proc weatherjoin {chan msg} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
-	p10 putjoin $::sock 57 $chan [nda get "regchan/$ndacname/ts"]
+	$::maintype putjoin $::sock 57 $chan [nda get "regchan/$ndacname/ts"]
 	nda set "weather/regchan/$ndacname" 1
 }
 
@@ -190,7 +190,7 @@ proc wunderground::msg {chan logo textf text} {
   set counter 0
   while {$counter <= [llength $text]} {
     if {[lindex $text $counter] != ""} {
-      p10 privmsg $::sock 57 $chan "${logo} ${textf}[string map {\\\" \"} [lindex $text $counter]]"
+      $::maintype privmsg $::sock 57 $chan "${logo} ${textf}[string map {\\\" \"} [lindex $text $counter]]"
     }
     incr counter
   }

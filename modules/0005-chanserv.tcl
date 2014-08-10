@@ -32,7 +32,7 @@ proc chantopic {from msg} {
 	set topic [join [lrange [lindex $msg 0] 1 end] " "]
 	if {""==[tnda get "login/$::netname($::sock)/$from"]} {$::maintype notice $::sock 77 $from "You fail at life.";return}
 	set ndacname [string map {/ [} [::base64::encode [string tolower $cname]]]
-	if {150>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock)/$from"] lmno|lmno $cname]} {
+	if {150>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock)/$from"] lmno|lmno $cname]} {
 		$::maintype privmsg $::sock 77 $cname "You must be at least halfop to change the stored channel topic."
 		return
 	}
@@ -101,7 +101,7 @@ proc upchanfant {cname msg} {
 	set from [lindex $msg 0 0]
 	if {""==[tnda get "login/$::netname($::sock)/$from"]} {$::maintype notice $::sock 77 $from "You fail at life.";return}
 	set ndacname [string map {/ [} [::base64::encode [string tolower $cname]]]
-	if {1>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$from"]]"] && ![string match "\[olvmn\]" [nda get "eggcompat/attrs/$ndacname/[tnda get "login/$::netname($::sock)/$from"]"]]} {
+	if {1>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"] && ![string match "\[olvmn\]" [nda get "eggcompat/attrs/$ndacname/[tnda get "login/$::netname($::sock)/$from"]"]]} {
 		$::maintype privmsg $::sock 77 $cname "You fail at life."
 		$::maintype privmsg $::sock 77 $cname "Channel not registered to you."
 		return
@@ -111,8 +111,10 @@ proc upchanfant {cname msg} {
 	set st ""
 	if {""!=[nda get "eggcompat/attrs/$ndacname/[tnda get "login/$::netname($::sock)/$from"]"]} {
 		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |v $cname]} {set sm v}
-		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |l $cname]} {set sm h}
-		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |omn $cname]} {set sm o}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |l $cname]} {set sm [tnda get "pfx/halfop"]}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |o $cname]} {set sm o}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |m $cname]} {set sm [tnda get "pfx/protect"]}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |n $cname]} {set sm [tnda get "pfx/owner"]}
 	} {
 		if {$lev >= 1} {set sm "v"; append st "v"}
 		if {$lev >= 150} {set sm "h"; append st "l"}
@@ -121,7 +123,7 @@ proc upchanfant {cname msg} {
 		if {$lev >= 500} {append st "n"}
 		chattr [tnda get "login/$::netname($::sock)/$from"] +$st $cname
 	}
-	$::maintype putmode $::sock 77 $cname $sm $from [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
+	$::maintype putmode $::sock 77 $cname +$sm $from [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
 }
 
 proc convertop {from msg} {
@@ -151,7 +153,7 @@ proc requestbot {cname msg} {
 	set bot [lindex $msg 1 0]
 	if {""==[tnda get "login/$::netname($::sock)/$from"]} {$::maintype notice $::sock 77 $from "You fail at life.";return}
 	set ndacname [string map {/ [} [::base64::encode [string tolower $cname]]]
-	if {150>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock)/$from"] lmno|lmno $cname]} {
+	if {150>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock)/$from"] lmno|lmno $cname]} {
 		$::maintype privmsg $::sock 77 $cname "You fail at life."
 		$::maintype privmsg $::sock 77 $cname "You must be at least halfop to request $bot."
 		return
@@ -230,7 +232,7 @@ proc adduserchan {from msg} {
 	if {![string is integer $addlevel]} {return}
 	if {$addlevel > [nda get "regchan/$ndacname/levels/[tnda get "login/$::netname($::sock)/$from"]"]} {$::maintype notice $::sock 77 $from "You can't do that; you're not the channel's Dave";return}
 	if {[nda get "regchan/$ndacname/levels/$adduser"] > [nda get "regchan/$ndacname/levels/[tnda get "login/$::netname($::sock)/$from"]"]} {$::maintype notice $::sock 77 $from "You can't do that; the person you're changing the level of is more like Dave than you.";return}
-	if {$adduser == [tnda get "login/$from"]} {$::maintype notice $::sock 77 $from "You can't change your own level, even if you're downgrading. Sorreh :/$::netname($::sock)/";return}
+	if {$adduser == [tnda get "login/$::netname($::sock)/$from"]} {$::maintype notice $::sock 77 $from "You can't change your own level, even if you're downgrading. Sorreh :/$::netname($::sock)/";return}
 	$::maintype notice $::sock 77 $from "Guess what? :) User added."
 	nda set "regchan/$ndacname/levels/[string tolower $adduser]" $addlevel
 }
@@ -250,8 +252,10 @@ proc upchan {from msg} {
 	set st ""
 	if {""!=[nda get "eggcompat/attrs/$ndacname/[tnda get "login/$::netname($::sock)/$from"]"]} {
 		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |v $cname]} {set sm v}
-		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |l $cname]} {set sm h}
-		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |omn $cname]} {set sm o}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |l $cname]} {set sm [tnda get "pfx/halfop"]}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |o $cname]} {set sm o}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |m $cname]} {set sm [tnda get "pfx/protect"]}
+		if {[matchattr [tnda get "login/$::netname($::sock)/$from"] |n $cname]} {set sm [tnda get "pfx/owner"]}
 	} {
 		if {$lev >= 1} {set sm "v"; append st "v"}
 		if {$lev >= 150} {set sm "h"; append st "l"}
@@ -260,7 +264,7 @@ proc upchan {from msg} {
 		if {$lev >= 500} {append st "n"}
 		chattr [tnda get "login/$::netname($::sock)/$from"] +$st $cname
 	}
-	$::maintype putmode $::sock 77 $cname $sm $from [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
+	$::maintype putmode $::sock 77 $cname +$sm $from [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
 }
 
 proc regnick {from msg} {

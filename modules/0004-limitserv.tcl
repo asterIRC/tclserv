@@ -1,7 +1,7 @@
-p10 sendUid $::sock "L" "limitserv" "services." "services." 47 "Channel Limit Adjustment Services"
+$::maintype sendUid $::sock "L" "limitserv" "services." "services." 47 "Channel Limit Adjustment Services"
 foreach {chan is} [nda get "limitserv/regchan"] {
 	if {1!=$is} {continue}
-	p10 putjoin $::sock 47 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
+	$::maintype putjoin $::sock 47 [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
 	tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname($::sock)/ts"]
 }
 bind $::sock request "l" "-" limitservjoin
@@ -26,14 +26,14 @@ proc limitservdown {chan msg} {
 
 proc limitservjoin {chan ft} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
-	p10 putjoin $::sock 47 $chan [nda get "regchan/$ndacname/ts"]
+	$::maintype putjoin $::sock 47 $chan [nda get "regchan/$ndacname/ts"]
 	nda set "limitserv/regchan/$ndacname" 1
 }
 
 proc limitservdo {} {
 	foreach {chan is} [nda get "limitserv/regchan"] {
 		if {1!=$is} {continue}
-		p10 putmode $::sock 47 [::base64::decode [string map {[ /} $chan]] "+l" [expr {[tnda get "limitserv/$::netname($::sock)/$chan"] + 10}] [nda get "regchan/$chan/$::netname($::sock)/ts"]
+		$::maintype putmode $::sock 47 [::base64::decode [string map {[ /} $chan]] "+l" [expr {[tnda get "limitserv/$::netname($::sock)/$chan"] + 10}] [nda get "regchan/$chan/$::netname($::sock)/ts"]
 	}
 	after 60000 {limitservdo}
 }
@@ -42,8 +42,8 @@ proc limitservdochan {cname msg} {
 	set chan [string map {/ [} [::base64::encode [string tolower $cname]]]
 	set from [lindex $msg 0 0]
 	if {150>[nda get "regchan/$chan/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"]} {
-		p10 privmsg $::sock 47 $cname "You must be at least halfop to manually trigger autolimit on the channel."
+		$::maintype privmsg $::sock 47 $cname "You must be at least halfop to manually trigger autolimit on the channel."
 		return
 	}
-	p10 putmode $::sock 47 $cname "+l" [expr {[tnda get "limitserv/$::netname($::sock)/$chan"] + 10}] [nda get "regchan/$chan/$::netname($::sock)/ts"]
+	$::maintype putmode $::sock 47 $cname "+l" [expr {[tnda get "limitserv/$::netname($::sock)/$chan"] + 10}] [nda get "regchan/$chan/$::netname($::sock)/ts"]
 }

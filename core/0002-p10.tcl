@@ -11,7 +11,7 @@ proc ::p10::sendUid {sck nick ident host dhost uid {realname "* Unknown *"} {mod
 	set sendnn [string repeat "A" [expr {3-[string length $sendid]}]]
 	append sendnn $sendid
 	set sl [format "%s N %s 1 %s %s %s %s AAAAAA %s%s :%s" $sid $nick [clock format [clock seconds] -format %s] $ident $host $modes $sid $sendnn $realname]
-	tnda set "intclient/$::netname($sck)/${sid}${sendnn}" $uid
+	tnda set "intclient/$::netname($sck)/$::netname($sck)/$::netname($sck)/${sid}${sendnn}" $uid
 	puts $sck $sl
 }
 
@@ -56,7 +56,7 @@ proc ::p10::notice {sck uid targ msg} {
 proc ::p10::setacct {sck targ msg} {
 	global sid
 	puts $sck [format "%s AC %s R %s" $sid $targ $msg]
-	tnda set "login/$::netname($sck)/$targ" $msg
+	tnda set "login/$::netname($sck)/$::netname($sck)/$::netname($sck)/$targ" $msg
 }
 
 proc ::p10::bind {sock type client comd script} {
@@ -65,13 +65,13 @@ proc ::p10::bind {sock type client comd script} {
 		set bindnum [rand 1 10000000]
 		if {[tnda get "binds/$sock/$type/$client/$comd/$bindnum"]!=""} {} {set moretodo 0}
 	}
-	tnda set "binds/$sock/$type/$client/$comd/$bindnum" $script
+	tnda set "binds/$sock/$type/$client/$comd/$::netname($sck)/$::netname($sck)/$bindnum" $script
 	puts stdout "binds/$sock/$type/$client/$comd/$bindnum [tnda get "binds/$sock/$type/$client/$comd"]"
 	return $bindnum
 }
 
 proc ::p10::unbind {sock type client comd id} {
-	tnda set "binds/$sock/$type/$client/$comd/$id" ""
+	tnda set "binds/$sock/$type/$client/$comd/$::netname($sck)/$::netname($sck)/$id" ""
 }
 
 proc ::p10::putmode {sck uid targ mode parm ts} {
@@ -143,7 +143,7 @@ proc ::p10::irc-main {sck} {
 					switch -- $c {
 						"+" {set state 1}
 						"-" {set state 0}
-						"o" {tnda set "oper/$::netname($sck)/[lindex $comd 0]" $state}
+						"o" {tnda set "oper/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" $state}
 					}
 				}
 			} } {
@@ -163,7 +163,7 @@ proc ::p10::irc-main {sck} {
 			callbind $sck create "-" "-" [lindex $comd 2] [lindex $comd 0] $::netname($sck)
 			callbind $sck join "-" "-" [lindex $comd 2] [lindex $comd 0] $::netname($sck)
 			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
-			tnda set "channels/$::netname($sck)/$chan/$::netname($sck)/ts" [lindex $comd 3]
+			tnda set "channels/$::netname($sck)/$chan/$::netname($sck)/$::netname($sck)/$::netname($sck)/ts" [lindex $comd 3]
 		}
 
 		"T" {
@@ -194,12 +194,12 @@ proc ::p10::irc-main {sck} {
 			} {
 				set four 4
 			}
-			tnda set "channels/$::netname($sck)/$chan/$::netname($sck)/ts" [lindex $comd 3]
+			tnda set "channels/$::netname($sck)/$chan/$::netname($sck)/$::netname($sck)/$::netname($sck)/ts" [lindex $comd 3]
 			foreach {nick} [split [lindex $comd $four] ","] {
 				set n [split $nick ":"]
 				set un [lindex $n 0]
 				set uo [lindex $n 1]
-				if {""!=$uo} {tnda set "channels/$::netname($sck)/$chan/modes/$::netname($sck)/$un" $uo}
+				if {""!=$uo} {tnda set "channels/$::netname($sck)/$chan/modes/$::netname($sck)/$::netname($sck)/$::netname($sck)/$un" $uo}
 				callbind $sck join "-" "-" [lindex $comd 2] $un
 			}
 
@@ -243,40 +243,40 @@ proc ::p10::irc-main {sck} {
 				}
 
 				if {""!=$loggedin} {
-					tnda set "login/$::netname($sck)/[lindex $comd $num]" $loggedin
+					tnda set "login/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd $num]" $loggedin
 				}
 
 				if {""!=$fakehost} {
-					tnda set "vhost/$::netname($sck)/[lindex $comd $num]" $fakehost
+					tnda set "vhost/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd $num]" $fakehost
 				}
 
-				tnda set "nick/$::netname($sck)/[lindex $comd $num]" [lindex $comd 2]
-				tnda set "oper/$::netname($sck)/[lindex $comd $num]" $oper
-				tnda set "ident/$::netname($sck)/[lindex $comd $num]" [lindex $comd 5]
-				tnda set "rhost/$::netname($sck)/[lindex $comd $num]" [lindex $comd 6]
+				tnda set "nick/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd $num]" [lindex $comd 2]
+				tnda set "oper/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd $num]" $oper
+				tnda set "ident/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd $num]" [lindex $comd 5]
+				tnda set "rhost/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd $num]" [lindex $comd 6]
 				callbind $sck conn "-" "-" [lindex $comd $num]
 			} {
 				callbind $sck nch "-" "-" [lindex $comd 0] [tnda get "nick/$::netname($sck)/[lindex $comd 0]"] [lindex $comd 2]
-				tnda set "nick/$::netname($sck)/[lindex $comd 0]" [lindex $comd 2]
+				tnda set "nick/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" [lindex $comd 2]
 			}
 		}
 
 		"Q" {
-			tnda set "login/$::netname($sck)/[lindex $comd 0]" ""
-			tnda set "nick/$::netname($sck)/[lindex $comd 0]" ""
-			tnda set "oper/$::netname($sck)/[lindex $comd 0]" 0
-			tnda set "ident/$::netname($sck)/[lindex $comd 0]" ""
-			tnda set "rhost/$::netname($sck)/[lindex $comd 0]" ""
-			tnda set "vhost/$::netname($sck)/[lindex $comd 0]" ""
+			tnda set "login/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" ""
+			tnda set "nick/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" ""
+			tnda set "oper/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" 0
+			tnda set "ident/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" ""
+			tnda set "rhost/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" ""
+			tnda set "vhost/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 0]" ""
 		}
 
 		"D" {
-			tnda set "login/$::netname($sck)/[lindex $comd 2]" ""
-			tnda set "nick/$::netname($sck)/[lindex $comd 2]" ""
-			tnda set "oper/$::netname($sck)/[lindex $comd 2]" 0
-			tnda set "ident/$::netname($sck)/[lindex $comd 2]" ""
-			tnda set "rhost/$::netname($sck)/[lindex $comd 2]" ""
-			tnda set "vhost/$::netname($sck)/[lindex $comd 2]" ""
+			tnda set "login/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 2]" ""
+			tnda set "nick/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 2]" ""
+			tnda set "oper/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 2]" 0
+			tnda set "ident/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 2]" ""
+			tnda set "rhost/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 2]" ""
+			tnda set "vhost/$::netname($sck)/$::netname($sck)/$::netname($sck)/[lindex $comd 2]" ""
 		}
 
 		"G" {
@@ -287,6 +287,9 @@ proc ::p10::irc-main {sck} {
 
 proc ::p10::login {sck} {
 	global servername sid password
+	tnda set "pfx/owner" o
+	tnda set "pfx/protect" o
+	tnda set "pfx/halfop" h
 	set sid [string repeat "A" [expr {2-[b64e $::numeric]}]]
 	append sid [b64e $::numeric]
 	puts $sck "PASS :$password"

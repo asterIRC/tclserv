@@ -38,7 +38,8 @@ channel protection bot.
         topiclock  Locks the channel topic to be whatever you
                    set with topic.
 
-topic 
+topic channel new topic
+        Set or change the stored "locked" topic for the named channel.
                 
 lsu channel
         View the userlist for a channel.
