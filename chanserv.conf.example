@@ -1,3 +1,5 @@
 set cs(nick) "Mars"
 set cs(ident) "services"
-set cs(host) "umbrellix.tk"
+set cs(host) "your.network.name"
+set cs(admin) "j4jackj"
+# REPLACE THIS! ^^ This user gets +mno set on him every bootup.

@@ -1,4 +1,7 @@
 set numeric "53"
 set servername "channels."
 set password "laoo,rpe"
-p10-burst [set sock [connect 127.0.0.1 4400 p10-main]]
+set maintype p10
+set sock [connect 127.0.0.1 4400 ::p10::irc-main]
+set netname($sock) "ast"
+# Set a short network name; used for relaybawts
