@@ -133,11 +133,12 @@ proc ::ts6::irc-main {sck} {
 						set v [string range $val 1 end]
 						set mod [split $v ")"]
 						set modechar [split [lindex $mod 1] {}]
-						puts stdout "$key $val"
 						set modepref [split [lindex $mod 0] {}]
+						puts stdout "$key $val $modechar $modepref"
 						foreach {c} $modechar {x} $modepref {
-							tnda set "ts6/$::netname($sck)/prefix/$modepref" $modechar
+							tnda set "ts6/prefix/$c" $x
 						}
+						puts stdout [tnda get "ts6/prefix"]
 					}
 				}
 			}
@@ -201,7 +202,8 @@ proc ::ts6::irc-main {sck} {
 			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 3]]]]
 			if {""==[tnda get "channels/$::netname($sck)/$chan/ts"]} {callbind $sck create "-" "-" [lindex $comd 3] [lindex $comd 0]}
 			callbind $sck join "-" "-" [lindex $comd 3] [lindex $comd 0]
-			tnda set "channels/$::netname($sck)/$chan/$::netname($sck)/ts" [lindex $comd 2]
+			tnda set "channels/$::netname($sck)/$chan/ts" [lindex $comd 2]
+			tnda set "userchan/[lindex $comd 0]/$chan" 1
 		}
 
 		"TMODE" {
@@ -235,8 +237,10 @@ proc ::ts6::irc-main {sck} {
 				set state uo
 				foreach {c} [split $nick {}] {
 					if {[string is integer $c]} {set state un}
-					if {$state == "uo"} {set c [tnda get "ts6/$::netname($sck)/prefix/$c"]}
-					append $state $c
+					puts stdout "$c $nick"
+					if {$state == "uo" && [info exists ::pfx($c)]} {set c $::pfx($c) ; }
+					if {"un"==$state} {append un $c}
+					if {"uo"==$state} {append uo $c}
 				}
 				puts stdout "$uo $un"
 				if {""!=$uo} {tnda set "channels/$::netname($sck)/$chan/modes/$un" $uo}
@@ -247,6 +251,8 @@ proc ::ts6::irc-main {sck} {
 
 		"PART" {
 			callbind $sck part "-" "-" [lindex $comd 2] [lindex $comd 0]
+			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
+			tnda set "userchan/[lindex $comd 0]/$chan" 0
 		}
 
 		"KICK" {
@@ -283,6 +289,9 @@ proc ::ts6::irc-main {sck} {
 			tnda set "ident/$::netname($sck)/[lindex $comd 0]" ""
 			tnda set "rhost/$::netname($sck)/[lindex $comd 0]" ""
 			tnda set "vhost/$::netname($sck)/[lindex $comd 0]" ""
+			foreach {chan _} [tnda get "userchan/[lindex $comd 0]"] {
+				tnda set "userchan/[lindex $comd 0]/$chan" 0
+			}
 		}
 
 		"KILL" {

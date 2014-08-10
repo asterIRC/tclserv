@@ -286,10 +286,6 @@ proc msgchattr {from msg} {
 	set attrs [lindex $msg 0 1]
 	set chan [lindex $msg 0 2]
 	set ch [lindex $msg 0 2]
-	if {$chan==""} {
-		set chan "*"
-		set ch "global"
-	}
 	foreach {c} [split $attrs {}] {
 		if {$c == "+"} {continue}
 		if {$c == "-"} {continue}
@@ -304,9 +300,10 @@ proc msgchattr {from msg} {
 			return
 		}
 	}
-	if {"*"!=$chan} {chattr $hand $attrs} {chattr $hand $attrs $chan}
+	if {""==$chan} {chattr $hand $attrs} {chattr $hand $attrs $chan}
 	$::maintype notice $::sock 77 $from "Global flags for $hand are now [nda get "eggcompat/attrs/global/[string tolower $handle]"]"
-	if {$ch != "global"} {$::maintype notice $::sock 77 $from "Flags on $chan for $hand are now [nda get "eggcompat/attrs/$ndacname/[string tolower $handle]"]"}
+	if {""==[nda get "regchan/$ndacname/levels/[string tolower $hand]"]} {nda set "regchan/$ndacname/levels/[string tolower $hand]" 1}
+	if {$ch != ""} {$::maintype notice $::sock 77 $from "Flags on $chan for $hand are now [nda get "eggcompat/attrs/$ndacname/[string tolower $handle]"]"}
 }
 
 proc nick2hand {nick} {

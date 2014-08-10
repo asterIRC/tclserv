@@ -101,7 +101,7 @@ proc upchanfant {cname msg} {
 	set from [lindex $msg 0 0]
 	if {""==[tnda get "login/$::netname($::sock)/$from"]} {$::maintype notice $::sock 77 $from "You fail at life.";return}
 	set ndacname [string map {/ [} [::base64::encode [string tolower $cname]]]
-	if {1>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"] && ![string match "\[olvmn\]" [nda get "eggcompat/attrs/$ndacname/[tnda get "login/$::netname($::sock)/$from"]"]]} {
+	if {(1>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"]) && ![matchattr [tnda get "login/$::netname($::sock)/$from"] aolvmn|olvmn $cname]} {
 		$::maintype privmsg $::sock 77 $cname "You fail at life."
 		$::maintype privmsg $::sock 77 $cname "Channel not registered to you."
 		return
@@ -123,7 +123,7 @@ proc upchanfant {cname msg} {
 		if {$lev >= 500} {append st "n"}
 		chattr [tnda get "login/$::netname($::sock)/$from"] +$st $cname
 	}
-	$::maintype putmode $::sock 77 $cname +$sm $from [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
+	$::maintype putmode $::sock 77 $cname +$sm $from [tnda get "channels/$::netname($::sock)/$ndacname/ts"]
 }
 
 proc convertop {from msg} {
@@ -210,17 +210,17 @@ proc regchan {from msg} {
 		$::maintype notice $::sock 77 $from "Channel already exists."
 		return
 	}
-	if {-1==[string first "o" [tnda get "channels/$ndacname/modes/$::netname($::sock)/$from"]]} {
+	if {-1==[string first "o" [tnda get "channels/$::netname($::sock)/$ndacname/modes/$from"]]} {
 		$::maintype notice $::sock 77 $from "You fail at life."
 		$::maintype notice $::sock 77 $from "You are not an operator."
 		return
 	}
 	$::maintype notice $::sock 77 $from "Guess what? :)"
 	nda set "regchan/$ndacname/levels/[tnda get "login/$::netname($::sock)/$from"]" 500
-	nda set "regchan/$ndacname/ts" [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
-	$::maintype putjoin $::sock 77 $cname [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
+	nda set "regchan/$ndacname/ts" [tnda get "channels/$::netname($::sock)/$ndacname/ts"]
+	$::maintype putjoin $::sock 77 $cname [tnda get "channels/$::netname($::sock)/$ndacname/ts"]
 	chattr [tnda get "login/$::netname($::sock)/$from"] +mno $cname
-	callbind $::sock "reg" "-" "-" $cname [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
+	callbind $::sock "reg" "-" "-" $cname [tnda get "channels/$::netname($::sock)/$ndacname/ts"]
 }
 
 proc adduserchan {from msg} {
@@ -242,7 +242,7 @@ proc upchan {from msg} {
 	if {""==[tnda get "login/$::netname($::sock)/$from"]} {$::maintype notice $::sock 77 $from "You fail at life.";return}
 	set cname [lindex $msg 0 0]
 	set ndacname [string map {/ [} [::base64::encode [string tolower $cname]]]
-	if {1>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"]} {
+	if {1>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$::netname($::sock)/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock)/$from"] aolvmn|olvmn $cname]} {
 		$::maintype notice $::sock 77 $from "You fail at life."
 		$::maintype notice $::sock 77 $from "Channel not registered to you."
 		return
@@ -264,7 +264,7 @@ proc upchan {from msg} {
 		if {$lev >= 500} {append st "n"}
 		chattr [tnda get "login/$::netname($::sock)/$from"] +$st $cname
 	}
-	$::maintype putmode $::sock 77 $cname +$sm $from [tnda get "channels/$ndacname/$::netname($::sock)/ts"]
+	$::maintype putmode $::sock 77 $cname +$sm $from [tnda get "channels/$::netname($::sock)/$ndacname/ts"]
 }
 
 proc regnick {from msg} {
