@@ -277,11 +277,22 @@ proc ::ts6::irc-main {sck} {
 			}
 			tnda set "nick/$::netname($sck)/[lindex $comd $num]" [lindex $comd 2]
 			tnda set "oper/$::netname($sck)/[lindex $comd $num]" $oper
-			tnda set "ident/$::netname($sck)/[lindex $comd $num]" [lindex $comd 5]
-			tnda set "vhost/$::netname($sck)/[lindex $comd $num]" [lindex $comd 6]
+			tnda set "ident/$::netname($sck)/[lindex $comd $num]" [lindex $comd 6]
+			tnda set "vhost/$::netname($sck)/[lindex $comd $num]" [lindex $comd 7]
 			callbind $sck conn "-" "-" [lindex $comd $num]
 		}
 
+		"ENCAP" {
+			switch -nocase -- [lindex $comd 3] {
+				"SASL" {
+					#don't bother
+				}
+			}
+		}
+
+		"TOPIC" {
+			callbind $sck topic "-" "-" [lindex $comd 2] [join $payload " "]
+		}
 		"QUIT" {
 			tnda set "login/$::netname($sck)/[lindex $comd 0]" ""
 			tnda set "nick/$::netname($sck)/[lindex $comd 0]" ""
@@ -290,6 +301,7 @@ proc ::ts6::irc-main {sck} {
 			tnda set "rhost/$::netname($sck)/[lindex $comd 0]" ""
 			tnda set "vhost/$::netname($sck)/[lindex $comd 0]" ""
 			foreach {chan _} [tnda get "userchan/[lindex $comd 0]"] {
+				callbind $sck part "-" "-" [ndadec $chan] [lindex $comd 0]
 				tnda set "userchan/[lindex $comd 0]/$chan" 0
 			}
 		}

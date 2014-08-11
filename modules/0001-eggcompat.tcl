@@ -32,6 +32,11 @@ proc protectopcheck {mc ftp} {
 
 proc autoopcheck {c f} {
 	puts stdout "$c $f"
+	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] |k $c]} {
+		$::maintype putmode $::sock 77 $c +bb "*![tnda get "ident/$::netname($::sock)/$f"]@[tnda get "vhost/$::netname($::sock)/$f"] \$a:[tnda get "login/$::netname($::sock)/$f"]" [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+		$::maintype kick $::sock 77 $c $f "Autokicked (+k attribute)"
+		return
+	}
 	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] n|] && [channel get $c operit]} {
 		$::maintype putmode $::sock 77 $c +[tnda get "pfx/owner"] $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
 		return
@@ -289,12 +294,13 @@ proc msgchattr {from msg} {
 	foreach {c} [split $attrs {}] {
 		if {$c == "+"} {continue}
 		if {$c == "-"} {continue}
-		if {$c == "v"} {set $c "mn|lmno"}
-		if {$c == "l"} {set $c "mn|mno"}
-		if {$c == "o"} {set $c "mn|omn"}
-		if {$c == "m"} {set $c "mn|mn"}
-		if {$c == "n"} {set $c "n|n"}
-		if {$c == "a"} {set $c "mn|"}
+		if {$c == "k"} {set c "mn|mnol"}
+		if {$c == "v"} {set c "mn|lmno"}
+		if {$c == "l"} {set c "mn|mno"}
+		if {$c == "o"} {set c "mn|omn"}
+		if {$c == "m"} {set c "mn|mn"}
+		if {$c == "n"} {set c "n|n"}
+		if {$c == "a"} {set c "mn|"}
 		if {![matchattr [tnda get "login/$::netname($::sock)/$from"] $c $chan]} {
 			$::maintype notice $::sock 77 $from "You may only give flags you already possess (Any of flags $c required to set $attrs)."
 			return
