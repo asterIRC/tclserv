@@ -1,3 +1,3 @@
 read the code, i'm too lazy to document this shite.
 
-one of the available scripts is a highly modified bmotion for tclserv. use at your own risk.
+you need php. no questions. you need php. you also need tcl, obviously. but you need php.
