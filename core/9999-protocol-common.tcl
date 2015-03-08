@@ -15,10 +15,8 @@ proc callbind {sock type client comd args} {
 	puts stdout [tnda get "binds/mode"]
 	if {""!=[tnda get "binds/$sock/$type/$client/$comd"]} {
 		foreach {id script} [tnda get "binds/$sock/$type/$client/$comd"] {
-			$script [lindex $args 0] [lrange $args 1 end]
+			if {$script != ""} {$script [lindex $args 0] [lrange $args 1 end]}
 		};return
 	}
 	#if {""!=[tnda get "binds/$type/-/$comd"]} {foreach {id script} [tnda get "binds/$type/-/$comd"] {$script [lindex $args 0] [lrange $args 1 end]};return}
 }
-
-$maintype login $::sock

@@ -1,8 +1,8 @@
 source chanserv.conf
 
-bind $::sock mode "-" "+" bitchopcheck
-bind $::sock mode "-" "-" protectopcheck
-bind $::sock join "-" "-" autoopcheck
+#bind $::sock($::cs(netname)) mode "-" "+" bitchopcheck
+#bind $::sock($::cs(netname)) mode "-" "-" protectopcheck
+bind $::sock($::cs(netname)) join "-" "-" autoopcheck
 
 proc protectopcheck {mc ftp} {
 	set f [lindex $ftp 0 0]
@@ -13,18 +13,18 @@ proc protectopcheck {mc ftp} {
 	if {"v"==$mc && ![channel get $t protectvoice]} {return}
 	switch -- $mc {
 		"o" {
-			if {[matchattr [tnda get "login/$::netname($::sock)/$p"] omn|omn $t]} {
-				$::maintype putmode $::sock 77 $t +$mc "$p" [tnda get "channels/$::netname($::sock)/[ndaenc $t]/ts"]
+			if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] omn|omn $t]} {
+				$::maintype putmode $::sock($::cs(netname)) 77 $t +$mc "$p" [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $t]/ts"]
 			}
 		}
 		"h" {
-			if {[matchattr [tnda get "login/$::netname($::sock)/$p"] l|l $t]} {
-				$::maintype putmode $::sock 77 $t +$mc "$p" [tnda get "channels/$::netname($::sock)/[ndaenc $t]/ts"]
+			if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] l|l $t]} {
+				$::maintype putmode $::sock($::cs(netname)) 77 $t +$mc "$p" [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $t]/ts"]
 			}
 		}
 		"v" {
-			if {[matchattr [tnda get "login/$::netname($::sock)/$p"] v|v $t]} {
-				$::maintype putmode $::sock 77 $t +$mc "$p" [tnda get "channels/$::netname($::sock)/[ndaenc $t]/ts"]
+			if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] v|v $t]} {
+				$::maintype putmode $::sock($::cs(netname)) 77 $t +$mc "$p" [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $t]/ts"]
 			}
 		}
 	}
@@ -32,55 +32,55 @@ proc protectopcheck {mc ftp} {
 
 proc autoopcheck {c f} {
 	puts stdout "$c $f"
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] |k $c]} {
-		$::maintype putmode $::sock 77 $c +bb "*![tnda get "ident/$::netname($::sock)/$f"]@[tnda get "vhost/$::netname($::sock)/$f"] \$a:[tnda get "login/$::netname($::sock)/$f"]" [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
-		$::maintype kick $::sock 77 $c $f "Autokicked (+k attribute)"
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] |k $c]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +bb "*![tnda get "ident/$::netname($::sock($::cs(netname)))/$f"]@[tnda get "vhost/$::netname($::sock($::cs(netname)))/$f"] \$a:[tnda get "login/$::netname($::sock($::cs(netname)))/$f"]" [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
+		$::maintype kick $::sock($::cs(netname)) 77 $c $f "Autokicked (+k attribute)"
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] n|] && [channel get $c operit]} {
-		$::maintype putmode $::sock 77 $c +[tnda get "pfx/owner"] $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] n|] && [channel get $c operit]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +[tnda get "pfx/owner"] $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] |n $c] && [channel get $c autoop]} {
-		$::maintype putmode $::sock 77 $c +[tnda get "pfx/owner"] $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
-		return
-	}
-
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] m|] && [channel get $c operit]} {
-		$::maintype putmode $::sock 77 $c +[tnda get "pfx/protect"] $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
-		return
-	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] |m $c] && [channel get $c autoop]} {
-		$::maintype putmode $::sock 77 $c +[tnda get "pfx/protect"] $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] |n $c] && [channel get $c autoop]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +[tnda get "pfx/owner"] $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
 
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] a|]} {
-		$::maintype putmode $::sock 77 $c +o $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] m|] && [channel get $c operit]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +[tnda get "pfx/protect"] $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] o|] && [channel get $c operit]} {
-		$::maintype putmode $::sock 77 $c +o $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] |m $c] && [channel get $c autoop]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +[tnda get "pfx/protect"] $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] |o $c] && [channel get $c autoop]} {
-		$::maintype putmode $::sock 77 $c +o $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] a|]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +o $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] l|] && [channel get $c operit]} {
-		$::maintype putmode $::sock 77 $c +[tnda get "pfx/halfop"] $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] o|] && [channel get $c operit]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +o $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] |l $c] && [channel get $c autohalfop]} {
-		$::maintype putmode $::sock 77 $c +[tnda get "pfx/halfop"] $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] |o $c] && [channel get $c autoop]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +o $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] v|] && [channel get $c operit]} {
-		$::maintype putmode $::sock 77 $c +v $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] l|] && [channel get $c operit]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +[tnda get "pfx/halfop"] $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
-	if {[matchattr [tnda get "login/$::netname($::sock)/$f"] |v $c] && [channel get $c autovoice]} {
-		$::maintype putmode $::sock 77 $c +v $f [tnda get "channels/$::netname($::sock)/[ndaenc $c]/ts"]
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] |l $c] && [channel get $c autohalfop]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +[tnda get "pfx/halfop"] $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
+		return
+	}
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] v|] && [channel get $c operit]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +v $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
+		return
+	}
+	if {[matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$f"] |v $c] && [channel get $c autovoice]} {
+		$::maintype putmode $::sock($::cs(netname)) 77 $c +v $f [tnda get "channels/$::netname($::sock($::cs(netname)))/[ndaenc $c]/ts"]
 		return
 	}
 }
@@ -97,33 +97,33 @@ proc bitchopcheck {mc ftp} {
 	if {"v"==$mc && ![channel get $t voicebitch]} {return}
 	switch -glob -- $mc {
 		"q" {
-			if {![matchattr [tnda get "login/$::netname($::sock)/$p"] n|n $t]} {
+			if {![matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] n|n $t]} {
 				puts stdout "M $t -$mc $p [nda get "regchan/[ndaenc $t]/ts"]"
-				$::maintype putmode $::sock 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
+				$::maintype putmode $::sock($::cs(netname)) 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
 			}
 		}
 		"a" {
-			if {![matchattr [tnda get "login/$::netname($::sock)/$p"] mn|mn $t]} {
+			if {![matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] mn|mn $t]} {
 				puts stdout "M $t -$mc $p [nda get "regchan/[ndaenc $t]/ts"]"
-				$::maintype putmode $::sock 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
+				$::maintype putmode $::sock($::cs(netname)) 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
 			}
 		}
 		"o" {
-			if {![matchattr [tnda get "login/$::netname($::sock)/$p"] aomn|omn $t]} {
+			if {![matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] aomn|omn $t]} {
 				puts stdout "M $t -$mc $p [nda get "regchan/[ndaenc $t]/ts"]"
-				$::maintype putmode $::sock 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
+				$::maintype putmode $::sock($::cs(netname)) 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
 			}
 		}
 		"h" {
-			if {![matchattr [tnda get "login/$::netname($::sock)/$p"] l|l $t]} {
+			if {![matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] l|l $t]} {
 				puts stdout "M $t -$mc $p [nda get "regchan/[ndaenc $t]/ts"]"
-				$::maintype putmode $::sock 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
+				$::maintype putmode $::sock($::cs(netname)) 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
 			}
 		}
 		"v" {
-			if {![matchattr [tnda get "login/$::netname($::sock)/$p"] v|v $t]} {
+			if {![matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$p"] v|v $t]} {
 				puts stdout "M $t -$mc $p [nda get "regchan/[ndaenc $t]/ts"]"
-				$::maintype putmode $::sock 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
+				$::maintype putmode $::sock($::cs(netname)) 77 $t "-$mc" "$p" [nda get "regchan/[ndaenc $t]/ts"]
 			}
 		}
 	}
@@ -142,20 +142,20 @@ proc ndaenc {n} {
 proc isbotnick {n} {return [expr {$n == $::botnick}]}
 
 proc putserv {msg} {
-	puts $::sock ":$::botnick $msg"
+	puts $::sock($::cs(netname)) ":$::botnick $msg"
 	puts stdout ":$::botnick $msg"
 }
 
 proc puthelp {msg} {
-	puts $::sock ":$::botnick $msg"
+	puts $::sock($::cs(netname)) ":$::botnick $msg"
 }
 
 proc putquick {msg} {
-	puts $::sock ":$::botnick $msg"
+	puts $::sock($::cs(netname)) ":$::botnick $msg"
 }
 
 proc putnow {msg} {
-	puts $::sock ":$::botnick $msg"
+	puts $::sock($::cs(netname)) ":$::botnick $msg"
 }
 
 proc ndadec {n} {
@@ -166,10 +166,10 @@ proc msgmt {from msg} {
 	set handle [lindex $msg 0 0]
 	set attr [lindex $msg 0 1]
 	set chan [lindex $msg 0 2]
-	$::maintype notice $::sock 77 $from "$handle $attr $chan Matchattr result: [matchattr $handle $attr $chan]"
+	$::maintype notice $::sock($::cs(netname)) 77 $from "$handle $attr $chan Matchattr result: [matchattr $handle $attr $chan]"
 }
 
-bind $::sock msg 77 "matchattr" msgmt
+bind $::sock($::cs(netname)) msg 77 "matchattr" msgmt
 
 proc matchattr {handle attr {chan "*"}} {
 	set handle [string tolower $handle]
@@ -267,21 +267,21 @@ proc validuser {n} {
 	if {""==[nda get "usernames/$n"]} {return 0} {return 1}
 }
 
-bind $::sock msg 77 "chanset" msgchanset
-bind $::sock msg 77 "chattr" msgchattr
-bind $::sock msg 77 "setxtra" msgxtra
+bind $::sock($::cs(netname)) msg 77 "chanset" msgchanset
+bind $::sock($::cs(netname)) msg 77 "chattr" msgchattr
+bind $::sock($::cs(netname)) msg 77 "setxtra" msgxtra
 set botnick $cs(nick)
 chattr $cs(admin) +mnolv
 
 proc msgchanset {from msg} {
 	set ndacname [ndaenc [lindex $msg 0 0]]
 	set chanset [lindex $msg 0 1]
-	if {300>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock)/$from"] m|m [lindex $msg 0 0]]} {
-		$::maintype notice $::sock 77 $from "Only channel super-operators (300) and above and network masters may use eggdrop-compatible chansets."
+	if {300>[nda get "regchan/$ndacname/levels/[string tolower [tnda get "login/$from"]]"] && ![matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$from"] m|m [lindex $msg 0 0]]} {
+		$::maintype notice $::sock($::cs(netname)) 77 $from "Only channel super-operators (300) and above and network masters may use eggdrop-compatible chansets."
 		return
 	}
 	channel set [lindex $msg 0 0] $chanset
-	$::maintype notice $::sock 77 $from "Eggdrop compatible chanset $chanset set on [lindex $msg 0 0]."
+	$::maintype notice $::sock($::cs(netname)) 77 $from "Eggdrop compatible chanset $chanset set on [lindex $msg 0 0]."
 }
 
 proc msgchattr {from msg} {
@@ -301,20 +301,20 @@ proc msgchattr {from msg} {
 		if {$c == "m"} {set c "mn|mn"}
 		if {$c == "n"} {set c "n|n"}
 		if {$c == "a"} {set c "mn|"}
-		if {![matchattr [tnda get "login/$::netname($::sock)/$from"] $c $chan]} {
-			$::maintype notice $::sock 77 $from "You may only give flags you already possess (Any of flags $c required to set $attrs)."
+		if {![matchattr [tnda get "login/$::netname($::sock($::cs(netname)))/$from"] $c $chan]} {
+			$::maintype notice $::sock($::cs(netname)) 77 $from "You may only give flags you already possess (Any of flags $c required to set $attrs)."
 			return
 		}
 	}
 	if {""==$chan} {chattr $hand $attrs} {chattr $hand $attrs $chan}
-	$::maintype notice $::sock 77 $from "Global flags for $hand are now [nda get "eggcompat/attrs/global/[string tolower $handle]"]"
+	$::maintype notice $::sock($::cs(netname)) 77 $from "Global flags for $hand are now [nda get "eggcompat/attrs/global/[string tolower $handle]"]"
 	if {""==[nda get "regchan/$ndacname/levels/[string tolower $hand]"]} {nda set "regchan/$ndacname/levels/[string tolower $hand]" 1}
-	if {$ch != ""} {$::maintype notice $::sock 77 $from "Flags on $chan for $hand are now [nda get "eggcompat/attrs/$ndacname/[string tolower $handle]"]"}
+	if {$ch != ""} {$::maintype notice $::sock($::cs(netname)) 77 $from "Flags on $chan for $hand are now [nda get "eggcompat/attrs/$ndacname/[string tolower $handle]"]"}
 }
 
 proc nick2hand {nick} {
 	foreach {uid nic} [tnda get "nick"] {
-		if {$nick == $nic} {return [tnda get "login/$::netname($::sock)/$uid"]}
+		if {$nick == $nic} {return [tnda get "login/$::netname($::sock($::cs(netname)))/$uid"]}
 	}
 }
 
@@ -327,14 +327,14 @@ proc setuser {nick datafield {dataval "body"} val} {
 }
 
 proc msgxtra {from msg} {
-	if {[set log [tnda get "login/$::netname($::sock)/$from"]]==""} {
-		$::maintype notice $::sock 77 $from "Until you've registered with the bot, you have no business setting XTRA values."
+	if {[set log [tnda get "login/$::netname($::sock($::cs(netname)))/$from"]]==""} {
+		$::maintype notice $::sock($::cs(netname)) 77 $from "Until you've registered with the bot, you have no business setting XTRA values."
 		return
 	}
 	set subfield [lindex $msg 0 0]
 	set value [join [lrange [lindex $msg 0] 1 end] " "]
 	setuser $log "XTRA" $subfield $value
-	$::maintype notice $::sock 77 $from "Set your user record XTRA $subfield to $value."
+	$::maintype notice $::sock($::cs(netname)) 77 $from "Set your user record XTRA $subfield to $value."
 }
 
 proc chandname2name {channame} {return $channame}
