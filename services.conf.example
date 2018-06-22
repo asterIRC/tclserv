@@ -1,7 +1,31 @@
-set numeric "53"
-set servername "channels."
-set password "laoo,rpe"
-set maintype ts6
-set sock [connect 127.0.0.1 4400 ::ts6::irc-main]
-set netname($sock) "ast"
-# Set a short network name; used for relaybawts
+# TCLServ Config File
+
+# needs prefix for ts6
+network "pand" "services.invalid" {
+	host 127.0.0.1 port +6697
+	numeric 53
+	pass	link
+	proto	ts6
+	prefix	{*~&@%+ yqaohv}
+}
+
+#old;
+#set numeric "53"
+#set servername "services.invalid"
+#set password "link"
+#set maintype ts6
+#set sock [connect 127.0.0.1 4400 ::ts6::irc-main]
+#set netname($sock) "pand"
+
+loadmodule debugserv
+
+# module confs after here, load before here
+
+debugserv "pand" {
+	logchan	#lounge
+	nick	DebugServ
+	ident	Debug
+	host	services.umbrellix.net
+	modes	+oiS
+	comment "Or +oiDS if you dont want it to hear channel convos"
+}

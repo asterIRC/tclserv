@@ -1,7 +1,7 @@
 set cs(nick) "Mars"
 set cs(ident) "services"
-set cs(host) "your.network.name"
-set cs(admin) "j4jackj"
-# REPLACE THIS! ^^ This user gets +mno set on him every bootup.
+set cs(host) "pandersticks.com"
+set cs(admin) "Ellenor"
+# REPLACE THIS! ^^ This user gets +mno set on them every bootup.
 set cs(netname) yournet
 ::ts6::login $::sock($cs(netname)) $::numeric $::password $cs(netname)

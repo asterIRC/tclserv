@@ -1,0 +1,7 @@
+set numeric "53"
+set servername "services.invalid"
+set password "link"
+set maintype ts6
+set sock [connect 127.0.0.1 4400 ::ts6::irc-main]
+set netname($sock) "pand"
+# Set a short network name; used for relaybawts

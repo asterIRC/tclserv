@@ -14,8 +14,9 @@ proc pwhash {pass} {
 	return "SHA1/$hash"
 }
 
-proc rand {minn maxx} {
+proc rand {minn {maxx 0}} {
 	if {$minn==$maxx} {return $maxx}
+	if {$minn > $maxx} {set omx $maxx; set maxx $minn ; set minn $omx}
 	set maxnum [expr {$maxx - $minn}]
 	set fp [open /dev/urandom r]
 	set bytes [read $fp 6]
@@ -35,16 +36,89 @@ proc mysrc {script} {
 	close $fp
 	uplevel "#0" $ev
 }
+
+proc readfile {script} {
+	set fp [open $script r]
+	set ev [read $fp]
+	close $fp
+	return $ev
+}
+
+proc readbfile {script} {
+	set fp [open $script rb]
+	set ev [read $fp]
+	close $fp
+	return $ev
+}
+
+proc loadmodule {script} {
+	set fp [open [format "./modules/%s.tcl" $script] r]
+	set ev [read $fp]
+	close $fp
+	uplevel "#0" $ev
+}
+
+proc save.db {name var no oper} {
+	upvar $var db
+	global lastsave
+	if {$lastsave + 40 > [set now [clock seconds]]} {return} ;#save CPU time by not always saving DB; integrity problems may result
+	# ensure DB save is atomic, so if tclserv is killed during or under 12.5 seconds after save
+	catch [list file rename $name [format "%s.bk%s" $name $now]]
+	set there [open $name [list WRONLY CREAT TRUNC BINARY]]
+	# should not block for long
+	puts -nonewline $there $db
+	close $there
+	after 12500 catch [list file delete -- [format "%s.bk%s" $name $now]]
+	return
+}
+
 mysrc nda.tcl
-::tie::tie nd file services.db
+# every 40sec, save, but not if never written
+
+set lastsave [clock seconds]
+
+if {[file exists [pwd]/services.db]} {
+	set nd [readbfile [format "%s/%s" [pwd] services.db]]
+}
+
+set globwd [pwd]
+set gettext [list]
+
+trace add variable nd [list write unset] [list save.db [format "%s/%s" [pwd] services.db]]
+
+
+#::tie::tie nd file services.db
+
+source openconf2.tcl
 
 foreach {file} [lsort [glob ./core/*.tcl]] {
 	mysrc $file
 }
 #mysrc services.conf
 
-foreach {file} [lsort [glob ./modules/*.tcl]] {
-	mysrc $file
+
+proc svc.rehash {} {
+	global gettext
+	if {[file exists $::globwd/language.txt]} {
+		set languagefile [split [readfile [format "%s/%s" $::globwd language.txt]] "\n"]
+		foreach {line} $languagefile {
+			set ll [split $line " "]
+			set ltext [join [lrange $ll 1 end] " "]
+			dict set gettext [lindex $ll 0] $ltext
+		}
+	}
+	tnda set "openconf" [list]
+	mysrc $::globwd/services.conf
 }
+
+svc.rehash
+#by now we've loaded everything
+callbind - evnt - "confloaded" loaded
+
+#load from cfg file, not here
+
+#foreach {file} [lsort [glob ./modules/*.tcl]] {
+#	mysrc $file
+#}
 
 vwait forever
