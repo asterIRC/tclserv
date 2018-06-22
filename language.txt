@@ -1,2 +1,10 @@
 debugserv.metadata 14/2/12/ Metadata %s for %s: %s
+debugserv.nometadata 14/7/8/ %s, you do not have any metadata set by the ircd.
 continuant 14/2/12/ %s
+debugserv.rehashed 14/3/9/ As you so politely demand, %s.
+debugserv.isoper 14/3/9/ %s (UID %s) is an oper on this network.
+debugserv.isntoper 14/5/4/ %s (UID %s) is 4NOT an oper on this network.
+debugserv.youreoper 14/3/9/ YOU (UID %s) are an oper on this network.
+debugserv.yourentoper 14/5/4/ YOU (UID %s) are 4NOT an oper on this network.
+debugserv.youvenoprivs 14/5/4/ YOU (UID %s) do 4NOT have the required privileges to execute the commanded action.
+debugserv.youvenoprivs2 14/5/4/ YOU (UID %s) do 4NOT have the required privileges to execute the commanded action. (Requires %s)

@@ -99,6 +99,7 @@ foreach {file} [lsort [glob ./core/*.tcl]] {
 
 proc svc.rehash {} {
 	global gettext
+	tnda set rehashing 1
 	if {[file exists $::globwd/language.txt]} {
 		set languagefile [split [readfile [format "%s/%s" $::globwd language.txt]] "\n"]
 		foreach {line} $languagefile {
@@ -109,6 +110,7 @@ proc svc.rehash {} {
 	}
 	tnda set "openconf" [list]
 	mysrc $::globwd/services.conf
+	tnda set rehashing 0
 }
 
 svc.rehash

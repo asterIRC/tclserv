@@ -253,7 +253,7 @@ proc ::ts6::irc-main {sck} {
 	global sid sock socksid
 	if {[eof $sck]} {close $sck}
 	gets $sck line
-	#putcmdlog $line
+	puts stdout $line
 	set line [string trim $line "\r\n"]
 	set one [string match ":*" $line]
 	set line [string trimleft $line ":"]
@@ -399,8 +399,8 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"MODE" {
-			if {[lindex $comd 3] == [tnda get "nick/$::netname($sck)/[lindex $comd 0]"]} {
-				foreach {c} [split [lindex $comd 4] {}] {
+			if {[lindex $comd 2] == [tnda get "nick/$::netname($sck)/[lindex $comd 0]"] || [lindex $comd 2] == [lindex $comd 0]} {
+				foreach {c} [split [lindex $comd 3] {}] {
 					switch -- $c {
 						"+" {set state 1}
 						"-" {set state 0}
@@ -506,8 +506,10 @@ proc ::ts6::irc-main {sck} {
 			set oper 0
 			set loggedin [lindex $comd 11]
 			set realhost [lindex $comd 10]
-			set modes [lindex $comd 4]
-			if {[string match "*o*" $modes]} {set oper 1}
+			set modes [lindex $comd 5]
+			puts stdout $comd
+			puts stdout $modes
+			if {[string first "o" $modes] != -1} {set oper 1}
 			if {"*"!=$loggedin} {
 				tnda set "login/$::netname($sck)/[lindex $comd $num]" $loggedin
 			}
@@ -523,7 +525,7 @@ proc ::ts6::irc-main {sck} {
 			tnda set "ipaddr/$::netname($sck)/[lindex $comd $num]" [lindex $comd 8]
 			tnda set "ts/$::netname($sck)/[lindex $comd $num]" [lindex $comd 4]
 			tnda set "rname/$::netname($sck)/[lindex $comd $num]" $payload
-			putloglev j * [format "New user at %s %s %s!%s@%s (IP address %s, vhost %s) :%s" $::netname($sck) [lindex $comd $num] [lindex $comd 2] [lindex $comd 6] [tnda get "rhost/$::netname($sck)/[lindex $comd $num]"] [lindex $comd 8] [tnda get "vhost/$::netname($sck)/[lindex $comd $num]"] $payload]
+			#putloglev j * [format "New user at %s %s %s!%s@%s (IP address %s, vhost %s) :%s" $::netname($sck) [lindex $comd $num] [lindex $comd 2] [lindex $comd 6] [tnda get "rhost/$::netname($sck)/[lindex $comd $num]"] [lindex $comd 8] [tnda get "vhost/$::netname($sck)/[lindex $comd $num]"] $payload]
 			callbind $sck conn "-" "-" [lindex $comd $num]
 		}
 

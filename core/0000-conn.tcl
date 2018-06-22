@@ -11,6 +11,10 @@ proc connect {addr port script} {
 proc mknetwork {a} {
 	set headlines [lrange $a 0 end-1]
 	set block [lindex $a end]
+	if {[catch {set ::sock($servername)} result] == 0} {
+		puts stdout "probably rehashing (duplicate network block, [tnda get rehashing], $result)"
+		return
+	}
 	if {[llength $headlines]<2} {
 		puts stdout "fuck it, block's invalid ($headlines)"
 		return
