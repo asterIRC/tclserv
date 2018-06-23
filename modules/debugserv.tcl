@@ -40,7 +40,7 @@ proc debugserv.oneintro {headline block} {
 #	bind $nsock pub - ".rehash" [list debugserv.crehash $net]
 	if {[string length $nspass] != 0 && [string length $nickserv] != 0} {
 		# only works if nettype is ts6!
-		if {[string first [debugserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $n $nickserv]] == 0} {
+		if {[string first [debugserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $net $nickserv]] == 0} {
 			$::nettype($net) privmsg $nsock $ourid $nickserv $nspass
 		} {
 			$::nettype($net) privmsg $nsock $ourid $logchan [gettext debugserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [debugserv.find6sid $net $nsserv]]
