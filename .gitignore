@@ -3,4 +3,6 @@
 *.pem
 scripts/
 *.motd
-
+maintest.tcl
+services.db.bk*
+*.bak
