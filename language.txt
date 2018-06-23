@@ -8,3 +8,4 @@ debugserv.youreoper 14/3/9/ YOU (UID %s) are an oper on this network.
 debugserv.yourentoper 14/5/4/ YOU (UID %s) are 4NOT an oper on this network.
 debugserv.youvenoprivs 14/5/4/ YOU (UID %s) do 4NOT have the required privileges to execute the commanded action.
 debugserv.youvenoprivs2 14/5/4/ YOU (UID %s) do 4NOT have the required privileges to execute the commanded action. (Requires %s)
+debugserv.impostornickserv 14/5/4/ NickServ specified in config file (nick %s, UID %s, intended server %s, whose SID is "%s" - check links if blank) is gone or an impostor! Not identifying with NickServ - DebugServ WILL NOT BE ABLE TO ACCESS SOME CHANNELS.

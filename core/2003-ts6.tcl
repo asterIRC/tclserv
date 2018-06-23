@@ -253,7 +253,7 @@ proc ::ts6::irc-main {sck} {
 	global sid sock socksid
 	if {[eof $sck]} {close $sck}
 	gets $sck line
-	puts stdout $line
+	#puts stdout $line
 	set line [string trim $line "\r\n"]
 	set one [string match ":*" $line]
 	set line [string trimleft $line ":"]

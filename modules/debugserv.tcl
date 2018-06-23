@@ -9,18 +9,45 @@ proc debugserv.connect {arg} {
 	}
 }
 
+proc debugserv.find6sid {n s {hunting 0}} {
+	# we're trying to get the sid of the server named $s
+	# if hunting, we're looking for the first splat match
+	set servs [tnda get "servers/$n"]
+	foreach {.k dv} $servs {
+		set k [string toupper [ndadec ${.k}]]
+		# name description uplink sid - we only need two
+		dictassign $dv name sname
+		if {$hunting} {
+			if {[string match [string tolower $s] [string tolower $sname]] == 1} {return $k}
+		} {
+			if {[string tolower $s] == [string tolower $sname]} {return $k}
+		}
+	}
+	return ""
+}
+
 proc debugserv.oneintro {headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
-	dictassign $block logchan logchan nick nick ident ident host host modes modes realname realname rehashprivs rehashprivs
+	dictassign $block logchan logchan nick nick ident ident host host modes modes realname realname rehashprivs rehashprivs idcommand nspass nickserv nickserv nsserv nsserv
 	tnda set "debugserv/$net/rehashprivs" $rehashprivs
+	tnda set "debugserv/$net/logchan" $logchan
+	#tnda set "debugserv/$net/nspass" $nspass
 	setctx $net
 	$::nettype($net) sendUid $nsock $nick $ident $host $host [set ourid [$::nettype($net) getfreeuid $net]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
 	tnda set "debugserv/$net/ourid" $ourid
 	bind $nsock pub - ".metadata" [list debugserv.pmetadata $net]
 #	bind $nsock pub - ".rehash" [list debugserv.crehash $net]
-	$::nettype($net) putjoin $nsock $ourid $logchan
-	after 500 [list $::nettype($net) putmode $nsock $ourid $logchan "+ao" [format "%s %s" [$::nettype($net) intclient2uid $net $ourid] [$::nettype($net) intclient2uid $net $ourid]]]
+	if {[string length $nspass] != 0 && [string length $nickserv] != 0} {
+		# only works if nettype is ts6!
+		if {[string first [debugserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $n $nickserv]] == 0} {
+			$::nettype($net) privmsg $nsock $ourid $nickserv $nspass
+		} {
+			$::nettype($net) privmsg $nsock $ourid $logchan [gettext debugserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [debugserv.find6sid $net $nsserv]]
+		}
+	}
+	after 650 $::nettype($net) putjoin $nsock $ourid $logchan
+	after 700 [list $::nettype($net) putmode $nsock $ourid $logchan "+ao" [format "%s %s" [$::nettype($net) intclient2uid $net $ourid] [$::nettype($net) intclient2uid $net $ourid]]]
 	bind $nsock msg [tnda get "debugserv/$net/ourid"] "metadata" [list debugserv.metadata $net]
 #	bind $nsock msg [tnda get "debugserv/$net/ourid"] "rehash" [list debugserv.rehash $net]
 #	bind $nsock pub - "gettext" [list debugserv.gettext $net]

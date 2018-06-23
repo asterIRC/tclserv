@@ -28,4 +28,8 @@ debugserv "pand" {
 	host	services.umbrellix.net
 	modes	+oiS
 	comment "Or +oiDS if you dont want it to hear channel convos"
+	comment "idcommand is obvious."
+	nickserv	"NickServ"
+	nsserv	services.umbrellix.net
+	idcommand	"IDENTIFY InvictusWAUS None"
 }
