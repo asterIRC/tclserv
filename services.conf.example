@@ -18,6 +18,7 @@ network "pand" "services.invalid" {
 #set netname($sock) "pand"
 
 loadmodule debugserv
+loadmodule quoteserv
 
 # module confs after here, load before here
 
@@ -32,4 +33,19 @@ debugserv "pand" {
 	nickserv	"NickServ"
 	nsserv	services.umbrellix.net
 	idcommand	"IDENTIFY InvictusWAUS None"
+}
+
+
+quoteserv "umb" {
+	logchan	#services
+	nick	QuoteServ
+	ident	Quote
+	host	Umbrellix/Special/TclServ/QuoteServ
+	modes	+oiS
+	comment "Or +oiDS if you dont want it to hear channel convos"
+	comment "NSPass can be a username space password, if your nickserv is an atheme nickserv."
+	nickserv	"NickServ"
+	nsserv	services.umbrellix.net
+	idcommand	"IDENTIFY InvictusWAUS 5467"
+	operflags	"oper:quote,oper:admin"
 }

@@ -1,8 +1,9 @@
-source nda.tcl
+#source nda.tcl
 #source 9999-protocol-common.tcl
 
 
 namespace eval ts6 {
+proc putcmdlog {args} {}
 proc ::ts6::b64e {numb} {
         set b64 [split "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" {}]
 
@@ -253,13 +254,14 @@ proc ::ts6::irc-main {sck} {
 	global sid sock socksid
 	if {[eof $sck]} {close $sck}
 	gets $sck line
+	setctx $::netname($sck)
 	#puts stdout $line
 	set line [string trim $line "\r\n"]
 	set one [string match ":*" $line]
 	set line [string trimleft $line ":"]
 	set gotsplitwhere [string first " :" $line]
 	if {$gotsplitwhere==-1} {set comd [split $line " "]} {set comd [split [string range $line 0 [expr {$gotsplitwhere - 1}]] " "]}
-	if {$gotsplitwhere==-1} {set payload [lindex $comd end]} {set payload [split [string range $line [expr {$gotsplitwhere + 2}] end] " "]}
+	if {$gotsplitwhere==-1} {set payload [lindex $comd end]} {set payload [string range $line [expr {$gotsplitwhere + 2}] end]}
 	if {$gotsplitwhere != -1} {lappend comd $payload}
 	if {[lindex $comd 0] == "PING"} {putl $sck "PONG $::snames($sck) :$payload"}
 	if {[lindex $comd 0] == "SERVER"} {putl $sck "VERSION"}
@@ -697,13 +699,13 @@ proc ::ts6::uid2rhost {netname u} {
 	return [tnda get "rhost/$netname/$u"]
 }
 proc ::ts6::uid2host {netname u} {
-	return [tnda get "host/$netname/$u"]
+	return [tnda get "vhost/$netname/$u"]
 }
 proc ::ts6::uid2ident {netname u} {
 	return [tnda get "ident/$netname/$u"]
 }
 proc ::ts6::nick2host {netname nick} {
-	return [tnda get "host/$netname/[nick2uid $netname $nick]"]
+	return [tnda get "vhost/$netname/[nick2uid $netname $nick]"]
 }
 proc ::ts6::nick2ident {netname nick} {
 	return [tnda get "ident/$netname/[nick2uid $netname $nick]"]

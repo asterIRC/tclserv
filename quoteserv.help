@@ -1,0 +1,18 @@
+qshelp {
+	main {
+		{            ---- Quotes Help ----}
+		{!quote search - Search for quotes matching}
+		{!quote gsearch - Search for global quotes matching}
+		{!quote view1stmatch - Search for quotes matching and view first matching quote.}
+		{!quote view - View quote.}
+		{!quote gview - View global quote.}
+		{!quote add - Add quote.}
+		{!quote gadd - Add global quote. Requires oper.}
+		{!quote del - Delete quote. Requires oper or to be the creator of the quote.}
+		{!quote join <#channel> - Join a new channel. You must be halfop or better in said channel, or oper}
+		{!quote goaway <#channel> - Leave a channel. You must be halfop or better in said channel, or oper}
+		{All commands may be used in PM. The channel name must be after the command name in this case (except global quotes).}
+		{You must not use the !quote prefix, in the case of PM.}
+		{End of help.}
+	}
+}

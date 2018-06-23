@@ -1,11 +1,22 @@
-debugserv.metadata 14/2/12/ Metadata %s for %s: %s
-debugserv.nometadata 14/7/8/ %s, you do not have any metadata set by the ircd.
-continuant 14/2/12/ %s
-debugserv.rehashed 14/3/9/ As you so politely demand, %s.
-debugserv.isoper 14/3/9/ %s (UID %s) is an oper on this network.
-debugserv.isntoper 14/5/4/ %s (UID %s) is 4NOT an oper on this network.
-debugserv.youreoper 14/3/9/ YOU (UID %s) are an oper on this network.
-debugserv.yourentoper 14/5/4/ YOU (UID %s) are 4NOT an oper on this network.
-debugserv.youvenoprivs 14/5/4/ YOU (UID %s) do 4NOT have the required privileges to execute the commanded action.
-debugserv.youvenoprivs2 14/5/4/ YOU (UID %s) do 4NOT have the required privileges to execute the commanded action. (Requires %s)
-debugserv.impostornickserv 14/5/4/ NickServ specified in config file (nick %s, UID %s, intended server %s, whose SID is "%s" - check links if blank) is gone or an impostor! Not identifying with NickServ - DebugServ WILL NOT BE ABLE TO ACCESS SOME CHANNELS.
+debugserv.metadata 14>2>12> Metadata %s for %s: %s
+debugserv.nometadata 14>7>8> %s, you do not have any metadata set by the ircd.
+continuant 14>2>12> %s
+debugserv.rehashed 14>3>9> As you so politely demand, %s.
+debugserv.isoper 14>3>9> %s (UID %s) is an oper on this network.
+debugserv.isntoper 14>5>4> %s (UID %s) is 4NOT an oper on this network.
+debugserv.youreoper 14>3>9> YOU (UID %s) are an oper on this network.
+debugserv.yourentoper 14>5>4> YOU (UID %s) are 4NOT an oper on this network.
+debugserv.youvenoprivs 14>5>4> YOU (UID %s) do 4NOT have the required privileges to execute the commanded action.
+debugserv.youvenoprivs2 14>5>4> YOU (UID %s) do 4NOT have the required privileges to execute the commanded action. (Requires %s)
+debugserv.impostornickserv 14>5>4> NickServ specified in config file (nick %s, UID %s, intended server %s, whose SID is "%s" - check links if blank) is gone or an impostor! Not identifying with NickServ - DebugServ WILL NOT BE ABLE TO ACCESS SOME CHANNELS.
+quoteserv.impostornickserv 14>5>4> NickServ specified in config file (nick %s, UID %s, intended server %s, whose SID is "%s" - check links if blank) is gone or an impostor! Not identifying with NickServ - DebugServ WILL NOT BE ABLE TO ACCESS SOME CHANNELS.
+quoteserv.results 14>3>9> Quotes: Found results numbered %s
+quoteserv.noresults 14>5>4> Quotes: Found NO results for your search.
+quoteserv.qheader 14>2>12> Quote number %s, by %s:
+quoteserv.quote 14>2>12> %s
+quoteserv.added 14>3>9> Added quote number %s to database.
+quoteserv.usevalidint 14>5>4> Please use a valid integer, without the #.
+quoteserv.enopriv 14>5>4> You do not have the required privileges to execute that command (requires oper permissions %s).
+quoteserv.removed 14>3>9> Removed quote number %s (by %s) from database.
+quoteserv.removedcontents 14>2>12> Removed quote was: %s
+quoteserv.left 14>7>8> The quote service was requested to leave by %s. Ja mata!

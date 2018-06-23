@@ -68,7 +68,7 @@ proc save.db {name var no oper} {
 	# should not block for long
 	puts -nonewline $there $db
 	close $there
-	after 12500 catch [list file delete -- [format "%s.bk%s" $name $now]]
+	after 12500 [list catch [list file delete -- [format "%s.bk%s" $name $now]]]
 	return
 }
 
@@ -77,9 +77,12 @@ mysrc nda.tcl
 
 set lastsave [clock seconds]
 
-if {[file exists [pwd]/services.db]} {
-	set nd [readbfile [format "%s/%s" [pwd] services.db]]
+if {[file exists services.db]} {
+	puts stdout "reading the nda dict"
+	set nd [readbfile services.db]
+	puts stdout $nd
 }
+set nd [readbfile services.db]
 
 set globwd [pwd]
 set gettext [list]

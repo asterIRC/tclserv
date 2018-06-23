@@ -26,6 +26,11 @@ proc debugserv.find6sid {n s {hunting 0}} {
 	return ""
 }
 
+proc debugservenabled {chan} {
+	if {[string tolower $chan] != [string tolower [tnda get "debugserv/[curctx]logchan"]} {return 0}
+	return 1
+}
+
 proc debugserv.oneintro {headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
@@ -90,23 +95,17 @@ proc debugserv.crehash {n c i m} {
 
 proc debugserv.pmetadata {n c i m} {
 	# net chan id msg
-#	puts stdout "debugserv.pmetadata called $n $c $i $m"
-	catch [set command {
 	setctx $n
+	if {($c != $i) && ![debugservenabled]} {return}
 	set metadatalist [tnda get "metadata/$n/$i"]
 	if {[llength $metadatalist] < 2} {
 		$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [gettext debugserv.nometadata [$::nettype($n) uid2nick $n $i]]
 	}
-#	puts stdout $metadatalist
 	foreach {.datum value} $metadatalist {
 		set datum [ndcdec ${.datum}]
 		$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [set totmsg [gettext debugserv.metadata $datum [$::nettype($n) uid2nick $n $i] $value]]
-	} }] zere
-	puts stdout [tnda get "oper/$n"]
+	}
 	$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [gettext [expr {[tnda get "oper/$n/$i"] == 1 ? "debugserv.isoper" : "debugserv.isntoper"}] [$::nettype($n) uid2nick $n $i] $i]
-#	puts stdout [curctx sock]
-#	puts stdout $command
-#	puts stdout $zere
 }
 
 proc debugserv.metadata {n i m} {
