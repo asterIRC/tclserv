@@ -1,6 +1,6 @@
 blocktnd debugserv
 
-bind - evnt - confloaded debugserv.connect
+llbind - evnt - confloaded debugserv.connect
 
 proc debugserv.connect {arg} {
 	puts stdout [format "there are %s debugserv blocks" [set blocks [tnda get "openconf/[ndcenc debugserv]/blocks"]]]
@@ -39,10 +39,11 @@ proc debugserv.oneintro {headline block} {
 	tnda set "debugserv/$net/logchan" $logchan
 	#tnda set "debugserv/$net/nspass" $nspass
 	setctx $net
-	$::nettype($net) sendUid $nsock $nick $ident $host $host [set ourid [$::nettype($net) getfreeuid $net]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
+	if {[% intclient2uid [tnda get "debugserv/$net/ourid"]] == ""} {$::nettype($net) sendUid $nsock $nick $ident $host $host [set ourid [$::nettype($net) getfreeuid $net]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes}
+	setuctx $nick
 	tnda set "debugserv/$net/ourid" $ourid
-	bind $nsock pub - ".metadata" [list debugserv.pmetadata $net]
-#	bind $nsock pub - ".rehash" [list debugserv.crehash $net]
+	llbind $nsock pub - ".metadata" [list debugserv.pmetadata $net]
+	llbind $nsock pub - ".rehash" [list debugserv.crehash $net]
 	if {[string length $nspass] != 0 && [string length $nickserv] != 0} {
 		# only works if nettype is ts6!
 		if {[string first [debugserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $net $nickserv]] == 0} {
@@ -53,10 +54,10 @@ proc debugserv.oneintro {headline block} {
 	}
 	after 650 $::nettype($net) putjoin $nsock $ourid $logchan
 	after 700 [list $::nettype($net) putmode $nsock $ourid $logchan "+ao" [format "%s %s" [$::nettype($net) intclient2uid $net $ourid] [$::nettype($net) intclient2uid $net $ourid]]]
-	bind $nsock msg [tnda get "debugserv/$net/ourid"] "metadata" [list debugserv.metadata $net]
-#	bind $nsock msg [tnda get "debugserv/$net/ourid"] "rehash" [list debugserv.rehash $net]
-#	bind $nsock pub - "gettext" [list debugserv.gettext $net]
-	puts stdout "bind $nsock msg [tnda get "debugserv/$net/ourid"] metadata [list debugserv.metdata $net]"
+	llbind $nsock msg [tnda get "debugserv/$net/ourid"] "metadata" [list debugserv.metadata $net]
+	llbind $nsock msg [tnda get "debugserv/$net/ourid"] "rehash" [list debugserv.rehash $net]
+#	llbind $nsock pub - "gettext" [list debugserv.gettext $net]
+	puts stdout "llbind $nsock msg [tnda get "debugserv/$net/ourid"] metadata [list debugserv.metdata $net]"
 	puts stdout [format "Connected for %s: %s %s %s" $net $nick $ident $host]
 }
 

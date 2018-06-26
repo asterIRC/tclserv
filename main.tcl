@@ -65,8 +65,10 @@ proc save.db {name var no oper} {
 	# ensure DB save is atomic, so if tclserv is killed during or under 12.5 seconds after save
 	catch [list file rename $name [format "%s.bk%s" $name $now]]
 	set there [open $name [list WRONLY CREAT TRUNC BINARY]]
+	chan configure $there -blocking 0 -buffering full -buffersize 8192
 	# should not block for long
 	puts -nonewline $there $db
+	flush $there
 	close $there
 	after 12500 [list catch [list file delete -- [format "%s.bk%s" $name $now]]]
 	return

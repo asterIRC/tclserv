@@ -1,8 +1,8 @@
 #source chanserv.conf
 
-#bind [curctx sock] mode "-" "+" bitchopcheck
-#bind [curctx sock] mode "-" "-" protectopcheck
-#bind [curctx sock] join "-" "-" autoopcheck
+#llbind [curctx sock] mode "-" "+" bitchopcheck
+#llbind [curctx sock] mode "-" "-" protectopcheck
+#llbind [curctx sock] join "-" "-" autoopcheck
 
 proc protectopcheck {mc f t p} {
 	if {"o"==$mc && ![channel get $t protectop]} {return}
@@ -147,15 +147,27 @@ proc timers {} {set t {}; foreach a [after info] {lappend t "0 [lindex [after in
 proc killtimer id {return [after cancel $id]}
 proc killutimer id {return [after cancel $id]}
 
-proc isbotnick {n} {return [expr {$n == $::botnick}]}
-
+proc isbotnick {n} {return [expr {$n == $::globuctx}]}
 
 set globctx ""
+set globuctx ""
 
 proc setctx {ctx} {
 	global globctx
 	if {[catch [list set ::sock($ctx)] erre] > 0} {return} ; # silently crap out
 	set globctx $ctx
+}
+
+proc setuctx {ctx} {
+	global globuctx
+	if {[% nick2uid $ctx] == ""} {return} ; # silently crap out
+	set globuctx [% uid2intclient [% nick2uid $ctx]]
+}
+
+proc % {c args} {
+	set ul [list [curctx proto] $c [curctx sock]]
+	foreach {a} $args {lappend ul $a}
+	uplevel 1 $a
 }
 
 proc curctx {{type .net}} {
@@ -167,6 +179,15 @@ proc curctx {{type .net}} {
 		.net {
 			return $::globctx
 		}
+		.unum {
+			return $::globuctx
+		}
+		.uid {
+			return [% intclient2uid $::globuctx]
+		}
+		.user {
+			return [% uid2nick [% intclient2uid $::globuctx]]
+		}
 		.proto {
 			return $::nettype($::globctx)
 		}
@@ -175,7 +196,7 @@ proc curctx {{type .net}} {
 
 foreach {pname} [list putserv puthelp putquick putnow] {
 	proc $pname {msg} {
-		puts [curctx sock] [[curctx proto] formprefix [curctx net] $msg]
+		puts [curctx sock] [[curctx proto] formprefix [curctx sock] $msg]
 	}
 }
 
@@ -186,7 +207,7 @@ proc msgmt {from msg} {
 	[curctx proto] notice [curctx sock] 77 $from "$handle $attr $chan Matchattr result: [matchattr $handle $attr $chan]"
 }
 
-#bind [curctx sock] msg 77 "matchattr" msgmt
+#llbind [curctx sock] msg 77 "matchattr" msgmt
 
 proc matchattr {handle attr {chan "*"}} {
 	set handle [string tolower $handle]
@@ -194,14 +215,14 @@ proc matchattr {handle attr {chan "*"}} {
 	set gattr [lindex [split $attr "&|"] 0]
 	set cattr [lindex [split $attr "&|"] 1]
 	set isattrg 0
-	foreach {c} [split [nda get "eggcompat/attrs/global/$handle"] {}] {
+	foreach {c} [split [nda get "eggcompat/[curctx net]/attrs/global/$handle"] {}] {
 		foreach {k} [split $gattr {}] {
 			if {$c == $k} {set isattrg 1}
 		}
 	}
 	set isattrc 0
 	if {"*"!=$chan} {
-		foreach {c} [split [nda get "eggcompat/attrs/[ndaenc $chan]/$handle"] {}] {
+		foreach {c} [split [nda get "eggcompat/[curctx net]/attrs/[ndaenc $chan]/$handle"] {}] {
 			foreach {k} [split $cattr {}] {
 				if {$c == $k} {set isattrc 1}
 			}
@@ -229,7 +250,7 @@ proc chattr {handle attr {chan "*"}} {
 				append app $c
 			}
 		}
-		nda set "eggcompat/attrs/global/$handle" [join [concat [string map $del [nda get "eggcompat/attrs/global/$handle"]] $app] ""]
+		nda set "eggcompat/[curctx net]/attrs/global/$handle" [join [concat [string map $del [nda get "eggcompat/[curctx net]/attrs/global/$handle"]] $app] ""]
 	} {
 		set del [list]
 		set app ""
@@ -246,7 +267,7 @@ proc chattr {handle attr {chan "*"}} {
 			}
 		}
 		puts stdout [ndaenc $chan]
-		nda set "eggcompat/attrs/[ndaenc $chan]/$handle" [join [concat [string map $del [nda get "eggcompat/attrs/[ndaenc $chan]/$handle"]] $app] ""]
+		nda set "eggcompat/[curctx net]/attrs/[ndaenc $chan]/$handle" [join [concat [string map $del [nda get "eggcompat/[curctx net]/attrs/[ndaenc $chan]/$handle"]] $app] ""]
 	}
 }
 
@@ -259,7 +280,7 @@ proc channels {} {
 
 namespace eval channel {
 	proc ::channel::get {chan flag} {
-		if {[::set enda [nda get "eggcompat/chansets/[ndaenc $chan]/[ndaenc [string map {+ ""} $flag]]"]]!=""} {return $enda} {return 0}
+		if {[::set enda [nda get "eggcompat/[curctx net]/chansets/[ndaenc $chan]/[ndaenc [string map {+ ""} $flag]]"]]!=""} {return $enda} {return 0}
 	}
 	proc ::channel::set {chan flags} {
 		if {[llength $flags] != 1} {
@@ -267,13 +288,13 @@ namespace eval channel {
 				::set bit [string index $flag 0]
 				if {$bit=="+"} {::set bitt 1} {::set bitt 0}
 				::set flag [string range $flag 1 end]
-				nda set "eggcompat/chansets/[ndaenc $chan]/[ndaenc [string map {+ ""} $flag]]" $bitt
+				nda set "eggcompat/[curctx net]/chansets/[ndaenc $chan]/[ndaenc [string map {+ ""} $flag]]" $bitt
 			}
 		} {
 			::set bit [string index $flags 0]
 			if {$bit=="+"} {::set bitt 1} {::set bitt 0}
 			::set flag [string range $flags 1 end]
-			nda set "eggcompat/chansets/[ndaenc $chan]/[ndaenc [string map {+ ""} $flags]]" $bitt
+			nda set "eggcompat/[curctx net]/chansets/[ndaenc $chan]/[ndaenc [string map {+ ""} $flags]]" $bitt
 		}
 	}
 	namespace export *
@@ -284,9 +305,9 @@ proc validuser {n} {
 	if {""==[nda get "usernames/$n"]} {return 0} {return 1}
 }
 
-#bind [curctx sock] msg 77 "chanset" msgchanset
-#bind [curctx sock] msg 77 "chattr" msgchattr
-#bind [curctx sock] msg 77 "setxtra" msgxtra
+#llbind [curctx sock] msg 77 "chanset" msgchanset
+#llbind [curctx sock] msg 77 "chattr" msgchattr
+#llbind [curctx sock] msg 77 "setxtra" msgxtra
 #set botnick $cs(nick)
 #chattr $cs(admin) +mnolv
 
@@ -324,9 +345,9 @@ proc msgchattr {from msg} {
 		}
 	}
 	if {""==$chan} {chattr $hand $attrs} {chattr $hand $attrs $chan}
-	[curctx proto] notice [curctx sock] 77 $from "Global flags for $hand are now [nda get "eggcompat/attrs/global/[string tolower $handle]"]"
+	[curctx proto] notice [curctx sock] 77 $from "Global flags for $hand are now [nda get "eggcompat/[curctx net]/attrs/global/[string tolower $handle]"]"
 	if {""==[nda get "regchan/$ndacname/levels/[string tolower $hand]"]} {nda set "regchan/$ndacname/levels/[string tolower $hand]" 1}
-	if {$ch != ""} {[curctx proto] notice [curctx sock] 77 $from "Flags on $chan for $hand are now [nda get "eggcompat/attrs/$ndacname/[string tolower $handle]"]"}
+	if {$ch != ""} {[curctx proto] notice [curctx sock] 77 $from "Flags on $chan for $hand are now [nda get "eggcompat/[curctx net]/attrs/$ndacname/[string tolower $handle]"]"}
 }
 
 proc nick2hand {nick} {
@@ -363,7 +384,6 @@ proc channame2dname {channame} {return $channame}
 
 proc islinked {bot} {return 0}
 
-
 proc operHasPrivilege {n i p} {
 	# this bit requires irca.
 	set metadatum [tnda get "metadata/$n/$i/[ndcenc PRIVS]"]
@@ -399,9 +419,26 @@ proc ishalf {chan id} {
 }
 
 proc ismode {chan id mode} {
-	if {[string first $mode [[curctx proto] getupfx [curctx net] $chan $id]] != -1} {return 1} {return 0}
+	if {[string first $mode [[curctx proto] getupfx [curctx sock] $chan $id]] != -1} {return 1} {return 0}
 }
 
 proc ismodebutnot {chan id mode} {
-	if {[string length [[curctx proto] getupfx [curctx net] $chan $id]] > 0 && [string first $mode [[curctx proto] getupfx [curctx net] $chan $id]] == -1} {return 1} {return 0}
+	if {[string length [[curctx proto] getupfx [curctx sock] $chan $id]] > 0 && [string first $mode [[curctx proto] getupfx [curctx sock] $chan $id]] == -1} {return 1} {return 0}
+}
+
+# rules are odd. you should store the bind return in a variable to unbind it.
+# flags aren't part of the bind define.
+proc bind {type flag text script} {
+	set ctxsock [curctx sock]
+	set ctxuser [curctx unum]
+	return [llbind $ctxsock $type $ctxuser [list matchthenrun $ctxsock $ctxuser $flag $script]]
+}
+
+proc matchthenrun {sock user flags script args} {
+	#setctx $sock
+	foreach {a} $args {
+		lappend script $a
+	}
+#	matchattr [uid2hand $user] $flags
+	eval $script
 }

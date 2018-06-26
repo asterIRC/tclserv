@@ -1,20 +1,28 @@
-proc bind {sock type client comd script} {
+proc llbind {sock type client comd script} {
 	set moretodo 1
 	while {0!=$moretodo} {
-		set bindnum [rand 1 100000000]
-		if {[tnda get "binds/$sock/$type/$client/$comd/$bindnum"]!=""} {} {set moretodo 0}
+		set llbindnum [rand 1 100000000]
+		if {[tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]/$llbindnum"]!=""} {} {set moretodo 0}
 	}
-	tnda set "binds/$sock/$type/$client/$comd/$bindnum" $script
-	return $bindnum
+	tnda set "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]/$llbindnum" $script
+	return $llbindnum
 }
 
-proc unbind {sock type client comd id} {
-	tnda set "binds/$sock/$type/$client/$comd/$id" ""
+proc unllbind {sock type client comd id} {
+	tnda set "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]/$id" ""
+	tnda unset "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]/$id"
 }
-proc callbind {sock type client comd args} {
-#	puts stdout "$sock $type $client $comd $args"
-	if {""!=[tnda get "binds/$sock/$type/$client/$comd"]} {
-		foreach {id script} [tnda get "binds/$sock/$type/$client/$comd"] {
+proc unllbindall {sock type client comd} {
+	tnda set "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]" ""
+	tnda unset "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"
+}
+proc firellbind {sock type client comd args} {
+#	puts stdout "$sock $type $client [ndcenc $comd] $args"
+	global globuctx globctx
+	set globctx $::netname($sck)
+	set globuctx $client
+	if {""!=[tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"]} {
+		foreach {id script} [tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"] {
 			if {$script != ""} {
 				set scr $script
 #				lappend $scr $sock
@@ -22,10 +30,10 @@ proc callbind {sock type client comd args} {
 					lappend scr $a
 				}
 				if {[catch {eval $scr} erre] > 0} {puts stdout $erre
-					callbind $sock evnt - error $erre {*}$scr
+					firellbind $sock evnt - error $erre {*}$scr
 				}
 			}
 		};return
 	}
-	#if {""!=[tnda get "binds/$type/-/$comd"]} {foreach {id script} [tnda get "binds/$type/-/$comd"] {$script [lindex $args 0] [lrange $args 1 end]};return}
+	#if {""!=[tnda get "llbinds/$type/-/[ndcenc $comd]"]} {foreach {id script} [tnda get "llbinds/$type/-/[ndcenc $comd]"] {$script [lindex $args 0] [lrange $args 1 end]};return}
 }

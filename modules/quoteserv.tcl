@@ -3,7 +3,7 @@ blocktnd qshelp
 
 source quoteserv.help
 
-bind - evnt - confloaded quoteserv.connect
+llbind - evnt - confloaded quoteserv.connect
 
 proc quoteserv.connect {arg} {
 	puts stdout [format "there are %s quoteserv blocks" [set blocks [tnda get "openconf/[ndcenc quoteserv]/blocks"]]]
@@ -41,8 +41,8 @@ proc quoteserv.oneintro {headline block} {
 	setctx $net
 	$::nettype($net) sendUid $nsock $nick $ident $host $host [set ourid [$::nettype($net) getfreeuid $net]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
 	tnda set "quoteserv/[curctx net]/ourid" $ourid
-#	bind $nsock pub - ".metadata" [list quoteserv.pmetadata $net]
-#	bind $nsock pub - ".rehash" [list quoteserv.crehash $net]
+#	llbind $nsock pub - ".metadata" [list quoteserv.pmetadata $net]
+#	llbind $nsock pub - ".rehash" [list quoteserv.crehash $net]
 	if {[string length $nspass] != 0 && [string length $nickserv] != 0} {
 		# only works if nettype is ts6!
 		if {[string first [quoteserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $net $nickserv]] == 0} {
@@ -53,13 +53,13 @@ proc quoteserv.oneintro {headline block} {
 	}
 	after 650 $::nettype($net) putjoin $nsock $ourid $logchan
 	after 700 [list $::nettype($net) putmode $nsock $ourid $logchan "+ao" [format "%s %s" [$::nettype($net) intclient2uid $net $ourid] [$::nettype($net) intclient2uid $net $ourid]]]
-#	bind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] "metadata" [list quoteserv.metadata $net]
-#	bind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] "rehash" [list quoteserv.rehash $net]
-#	bind $nsock pub - "gettext" [list quoteserv.gettext $net]
-#	puts stdout "bind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] metadata [list quoteserv.metdata $net]"
+#	llbind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] "metadata" [list quoteserv.metadata $net]
+#	llbind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] "rehash" [list quoteserv.rehash $net]
+#	llbind $nsock pub - "gettext" [list quoteserv.gettext $net]
+#	puts stdout "llbind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] metadata [list quoteserv.metdata $net]"
 	puts stdout [format "Connected for %s: %s %s %s" $net $nick $ident $host]
-	bind $nsock pub - "!quote" [list quoteservdo $net]
-	bind $nsock evnt - privmsg [list qs.pmdo $net]
+	llbind $nsock pub - "!quote" [list quoteservdo $net]
+	llbind $nsock evnt - privmsg [list qs.pmdo $net]
 	puts stdout $::nd
 	foreach {chan is} [nda get "quoteserv/[curctx net]/regchan"] {
 		puts stdout "to join $chan on [curctx]"
