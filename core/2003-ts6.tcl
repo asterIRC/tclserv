@@ -274,7 +274,8 @@ proc ::ts6::irc-main {sck} {
 	switch -nocase -- [lindex $comd $one] {
 		"479" {putcmdlog $payload}
 		"PASS" {
-			putquick "PRIVMSG #services :$line"
+		#	putquick "PRIVMSG #services :$line"
+			puts stdout "we have a winner! $one"
 			set ssid [string repeat "0" [expr {3-[string length [::ts6::b64e $::sid($sck)]]}]];append ssid [::ts6::b64e $::sid($sck)]
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/uplink" $ssid
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/sid" $payload
@@ -282,15 +283,17 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"SERVER" {
-			putquick "PRIVMSG #services :$line"
+			puts stdout "we have a winner! $one"
 #			if {[lindex $comd [expr {$one + 2}]] != 1} {return};#we don't support jupes
 			tnda set "servers/$::netname($sck)/[ndaenc [tnda get "socksid/$::netname($sck)"]]/name" [lindex $comd [expr {$one + 1}]]
 			tnda set "servers/$::netname($sck)/[ndaenc [tnda get "socksid/$::netname($sck)"]]/description" [lindex $comd [expr {$one + 3}]]
-			firellbind $sck evnt "-" "ts6.alive" $::netname($sck) ;#obvious
-			firellbind $sck evnt "-" "alive" $::netname($sck) ;#obvious
+			firellbind $sck evnt "-" "alive" $::netname($sck)
+			firellbind - evnt "-" "alive" $::netname($sck)
+			firellbind $sck evnt "-" "ts6.alive" $::netname($sck)
 		}
 
 		"SID" {
+			puts stdout "we have a winner! $one"
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/name" [lindex $comd 2]
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/description" [lindex $comd 5]
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/uplink" [lindex $comd 0]
@@ -428,8 +431,8 @@ proc ::ts6::irc-main {sck} {
 		"BMASK" {
 			# always +, no ctr and no state
 			set adding [split $payload " "]
-			if {[lindex $comd 3] > [tnda get "channels/$::netname($sck)/$chan/ts"]} {return} ;# send it packing.
-			set channel [lindex $comd 3]
+			set chan [ndaenc [lindex $comd 3]]
+			if {[lindex $comd 2] > [tnda get "channels/$::netname($sck)/$chan/ts"]} {return} ;# send it packing.
 			set type [lindex $comd 4]
 			foreach {mask} $adding {
 				firellbind $sck mode - + $type [lindex $comd 0] [lindex $comd 3] $mask $::netname($sck)
@@ -514,8 +517,8 @@ proc ::ts6::irc-main {sck} {
 			set loggedin [lindex $comd 11]
 			set realhost [lindex $comd 10]
 			set modes [lindex $comd 5]
-			puts stdout $comd
-			puts stdout $modes
+		#	puts stdout $comd
+		#	puts stdout $modes
 			if {[string first "o" $modes] != -1} {set oper 1}
 			if {"*"!=$loggedin} {
 				tnda set "login/$::netname($sck)/[lindex $comd $num]" $loggedin
@@ -655,7 +658,7 @@ proc ::ts6::irc-main {sck} {
 		}
 	}
 	} erreur]
-	#puts stdout [join [list $erreno $erreur] " "]
+	if {$erreno != 0} {puts stdout [join [list $erreno $erreur] " "]}
 }
 
 # irrelevant parameters should simply be ignored.
@@ -691,13 +694,13 @@ proc ::ts6::login {sck {osid "42"} {password "link"} {servname "net"} {servernam
 #source services.conf
 
 proc ::ts6::nick2uid {sck nick} {
-	foreach {u n} [tnda get "nick/$netname"] {
+	foreach {u n} [tnda get "nick/$::netname($sck)"] {
 		if {[string tolower $n] == [string tolower $nick]} {return $u}
 	}
 	return ""
 }
 proc ::ts6::intclient2uid {sck nick} {
-	foreach {u n} [tnda get "intclient/$netname"] {
+	foreach {u n} [tnda get "intclient/$::netname($sck)"] {
 		if {[string tolower $n] == [string tolower $nick]} {return $u}
 	}
 	return ""

@@ -167,7 +167,7 @@ proc setuctx {ctx} {
 proc % {c args} {
 	set ul [list [curctx proto] $c [curctx sock]]
 	foreach {a} $args {lappend ul $a}
-	uplevel 1 $a
+	uplevel 1 $ul
 }
 
 proc curctx {{type .net}} {

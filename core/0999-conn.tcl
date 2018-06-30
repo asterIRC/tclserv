@@ -1,7 +1,7 @@
 package require tls
 
 # just to have sanity here. don't want a {} dict or a bum array
-set $::netname(-) -
+set ::netname(-) -
 
 proc connect {addr port script} {
 	if {[string index $port 0] == "+"} { set port [string range $port 1 end] ; set comd ::tls::socket } {set comd socket}
@@ -48,12 +48,13 @@ proc mknetwork {headlines block} {
 	set socke [connect $host $port [list $proto irc-main]]
 	after 500 $proto login $socke $numeric $pass $netname $servername
 	# store it up
-	postblock network $headlines $block
+#	postblock network $headlines $block
 }
 
 proc core.conn.mknetworks {args} {
-	set blocks [tnda get "openconf/[ndcenc network]/blocks"]]
+	set blocks [tnda get "openconf/[ndcenc network]/blocks"]
 	for {set i 1} {$i < ($blocks + 1)} {incr i} {
+		puts stdout "$blocks"
 		after 1000 [list mknetwork [tnda get [format "openconf/%s/hdr%s" [ndcenc network] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc network] $i]]]
 	}
 }

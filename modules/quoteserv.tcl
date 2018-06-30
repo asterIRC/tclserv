@@ -3,11 +3,12 @@ blocktnd qshelp
 
 source quoteserv.help
 
-llbind - evnt - confloaded quoteserv.connect
+llbind - evnt - alive quoteserv.connect
 
 proc quoteserv.connect {arg} {
 	puts stdout [format "there are %s quoteserv blocks" [set blocks [tnda get "openconf/[ndcenc quoteserv]/blocks"]]]
 	for {set i 1} {$i < ($blocks + 1)} {incr i} {
+		if {[string tolower [lindex [tnda get [format "openconf/%s/hdr%s" [ndcenc quoteserv] $i]] 0]] != [string tolower $arg]} {continue}
 		after 1000 [list quoteserv.oneintro [tnda get [format "openconf/%s/hdr%s" [ndcenc quoteserv] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc quoteserv] $i]]]
 	}
 }
@@ -39,20 +40,20 @@ proc quoteserv.oneintro {headline block} {
 	tnda set "quoteserv/[curctx net]/logchan" $logchan
 	#tnda set "quoteserv/[curctx net]/nspass" $nspass
 	setctx $net
-	$::nettype($net) sendUid $nsock $nick $ident $host $host [set ourid [$::nettype($net) getfreeuid $net]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
+	% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
 	tnda set "quoteserv/[curctx net]/ourid" $ourid
 #	llbind $nsock pub - ".metadata" [list quoteserv.pmetadata $net]
 #	llbind $nsock pub - ".rehash" [list quoteserv.crehash $net]
 	if {[string length $nspass] != 0 && [string length $nickserv] != 0} {
 		# only works if nettype is ts6!
-		if {[string first [quoteserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $net $nickserv]] == 0} {
-			$::nettype($net) privmsg $nsock $ourid $nickserv $nspass
+		if {[string first [quoteserv.find6sid $net $nsserv] [% nick2uid $nickserv]] == 0} {
+			% privmsg $ourid $nickserv $nspass
 		} {
-			$::nettype($net) privmsg $nsock $ourid $logchan [gettext quoteserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [quoteserv.find6sid $net $nsserv]]
+			% privmsg $ourid $logchan [gettext quoteserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [quoteserv.find6sid $net $nsserv]]
 		}
 	}
-	after 650 $::nettype($net) putjoin $nsock $ourid $logchan
-	after 700 [list $::nettype($net) putmode $nsock $ourid $logchan "+ao" [format "%s %s" [$::nettype($net) intclient2uid $net $ourid] [$::nettype($net) intclient2uid $net $ourid]]]
+	after 650 % putjoin $ourid $logchan
+	after 700 [list % putmode $ourid $logchan "+ao" [format "%s %s" [% intclient2uid $ourid] [% intclient2uid $ourid]]]
 #	llbind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] "metadata" [list quoteserv.metadata $net]
 #	llbind $nsock msg [tnda get "quoteserv/[curctx net]/ourid"] "rehash" [list quoteserv.rehash $net]
 #	llbind $nsock pub - "gettext" [list quoteserv.gettext $net]
@@ -65,7 +66,7 @@ proc quoteserv.oneintro {headline block} {
 		puts stdout "to join $chan on [curctx]"
 		if {1!=$is} {continue}
 		quoteservjoin [ndadec $chan] 0
-#		[curctx proto] putjoin [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
+#		% putjoin [tnda get "quoteserv/[curctx net]/ourid"] [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
 #		tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname([curctx sock])/ts"]
 	}
 }
@@ -79,16 +80,16 @@ proc qs.pmdo {n i t m} {
 proc quoteservjoin {chan {setting 1}} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
 	puts stdout "to join $chan on [curctx]"
-	[curctx proto] putjoin [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan
-	[curctx proto] putmode [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan "+ao" \
-		[format "%s %s" [[curctx proto] intclient2uid [curctx net] [tnda get "quoteserv/[curctx net]/ourid"]]\
-		 [[curctx proto] intclient2uid [curctx net] [tnda get "quoteserv/[curctx net]/ourid"]]]
+	% putjoin [tnda get "quoteserv/[curctx net]/ourid"] $chan
+	% putmode [tnda get "quoteserv/[curctx net]/ourid"] $chan "+ao" \
+		[format "%s %s" [% intclient2uid [tnda get "quoteserv/[curctx net]/ourid"]]\
+		 [% intclient2uid [tnda get "quoteserv/[curctx net]/ourid"]]]
 	if {$setting} {nda set "quoteserv/[curctx net]/regchan/$ndacname" 1}
 }
 
 proc quoteservpart {chan {who "the script"} {msg isunused}} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
-	[curctx proto] putpart [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.left $who]
+	% putpart [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.left $who]
 	nda set "quoteserv/[curctx net]/regchan/$ndacname" 0
 	nda unset "quoteserv/[curctx net]/regchan/$ndacname"
 }
@@ -133,9 +134,9 @@ proc quoteservdo {n chan from m} {
 			set ptn [format "*%s*" [join $para " "]]
 			set qts [quotesearch $chan $ptn]
 			if {[llength $qts] != 0} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.results #[join $qts ", #"]]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.results #[join $qts ", #"]]
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
 			}
 		}
 		"vi*1st*ma*" {
@@ -151,10 +152,10 @@ proc quoteservdo {n chan from m} {
 				set qtn [lindex $qts 0]
 				set qt [nda get "quoteserv/[curctx net]/quotes/$ndacname/q$qtn"]
 				set qb [nda get "quoteserv/[curctx net]/quotes/$ndacname/u$qtn"]
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.qheader $qtn $qb]
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.quote $qt]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.qheader $qtn $qb]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.quote $qt]
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
 			}
 		}
 		"ad*" {
@@ -167,20 +168,20 @@ proc quoteservdo {n chan from m} {
 			set qt [join $para " "]
 			set qtn [expr {([llength [nda get "quoteserv/[curctx net]/quotes/$ndacname"]]/6)+1}]
 			nda set "quoteserv/[curctx net]/quotes/$ndacname/q$qtn" $qt
-			nda set "quoteserv/[curctx net]/quotes/$ndacname/u$qtn" [format "(%s) %s!%s@%s" [tnda get "login/[curctx net]/$from"] [[curctx proto] uid2nick [curctx net] $from] [[curctx proto] uid2ident [curctx net] $from] [[curctx proto] uid2host [curctx net] $from]]
+			nda set "quoteserv/[curctx net]/quotes/$ndacname/u$qtn" [format "(%s) %s!%s@%s" [tnda get "login/[curctx net]/$from"] [% uid2nick $from] [% uid2ident $from] [% uid2host $from]]
 			nda set "quoteserv/[curctx net]/quotes/$ndacname/a$qtn" [string tolower [tnda get "login/[curctx net]/$from"]]
-			[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.added $qtn]
+			% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.added $qtn]
 		}
 		"gad*" {
 			set qt [join $para " "]
 			set qtn [expr {([llength [nda get "quoteserv/[curctx net]/quotes/$ndacname"]]/6)+3}]
 			if {![operHasPrivilege [curctx net] $from [tnda get "quoteserv/[curctx net]/operflags"]]} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
 			} {
 				nda set "quoteserv/[curctx net]/gquotes/q$qtn" $qt
-				nda set "quoteserv/[curctx net]/gquotes/u$qtn" [format "(%s) %s!%s@%s" [tnda get "login/[curctx net]/$from"] [[curctx proto] uid2nick [curctx net] $from] [[curctx proto] uid2ident [curctx net] $from] [[curctx proto] uid2host [curctx net] $from]]
+				nda set "quoteserv/[curctx net]/gquotes/u$qtn" [format "(%s) %s!%s@%s" [tnda get "login/[curctx net]/$from"] [% uid2nick $from] [% uid2ident $from] [% uid2host $from]]
 				nda set "quoteserv/[curctx net]/gquotes/a$qtn" [tnda get "login/[curctx net]/$from"]
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.added $qtn]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.added $qtn]
 			}
 		}
 		"de*" {
@@ -192,7 +193,7 @@ proc quoteservdo {n chan from m} {
 			}
 			set qtn [lindex $para 0]
 			if {![string is integer $qtn]} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]
 			}
 			if {[ismodebutnot $chan $from v] || [operHasPrivilege [curctx net] $from [tnda get "quoteserv/[curctx net]/operflags"]] || [string tolower [uid2hand $from]] == [nda get "quoteserv/[curctx net]/quotes/$ndacname/a$qtn"]} {
 				set qt [nda get "quoteserv/[curctx net]/quotes/$ndacname/q$qtn"]
@@ -201,22 +202,22 @@ proc quoteservdo {n chan from m} {
 				nda unset "quoteserv/[curctx net]/quotes/$ndacname/q$qtn"
 				nda unset "quoteserv/[curctx net]/quotes/$ndacname/u$qtn"
 				nda unset "quoteserv/[curctx net]/quotes/$ndacname/a$qtn"
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.removed $qtn $qb]
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.removedcontents $qt]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.removed $qtn $qb]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.removedcontents $qt]
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
 			}
 		}
 		"gde*" {
 			set qtn [lindex $para 0]
-			if {![string is integer $qtn]} {[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]}
+			if {![string is integer $qtn]} {% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]}
 			if {[operHasPrivilege [curctx net] $from [tnda get "quoteserv/[curctx net]/operflags"]]} {
 				nda unset "quoteserv/[curctx net]/gquotes/q$qtn" ""
 				nda unset "quoteserv/[curctx net]/gquotes/u$qtn" ""
 				nda unset "quoteserv/[curctx net]/gquotes/a$qtn" ""
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan "\[\002Quotes\002\] Blanked quote number #$qtn in database."
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan "\[\002Quotes\002\] Blanked quote number #$qtn in database."
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
 			}
 		}
 		"jo*" {
@@ -227,7 +228,7 @@ proc quoteservdo {n chan from m} {
 			if {[ismodebutnot $tochan $from v] || [operHasPrivilege [curctx net] $from [tnda get "quoteserv/[curctx net]/operflags"]]} {
 				quoteservjoin $tochan
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
 			}
 		}
 		"goa*" - "pa*" - "le*" {
@@ -236,9 +237,9 @@ proc quoteservdo {n chan from m} {
 			}
 			set tochan [lindex $para 0]
 			if {[ismodebutnot $tochan $from v] || [operHasPrivilege [curctx net] $from [tnda get "quoteserv/[curctx net]/operflags"]]} {
-				quoteservpart $tochan [format "(%s) %s!%s@%s" [tnda get "login/[curctx net]/$from"] [[curctx proto] uid2nick [curctx net] $from] [[curctx proto] uid2ident [curctx net] $from] [[curctx proto] uid2host [curctx net] $from]]
+				quoteservpart $tochan [format "(%s) %s!%s@%s" [tnda get "login/[curctx net]/$from"] [% uid2nick $from] [% uid2ident $from] [% uid2host $from]]
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.enopriv [tnda get "quoteserv/[curctx net]/operflags"]]
 			}
 		}
 		"vi*" {
@@ -249,26 +250,26 @@ proc quoteservdo {n chan from m} {
 				if {![quoteservenabled [lindex $opara 0]]} {return}
 			}
 			set qtn [lindex $para 0]
-			if {![string is integer $qtn]} {[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]}
+			if {![string is integer $qtn]} {% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]}
 			set qt [nda get "quoteserv/[curctx net]/quotes/$ndacname/q$qtn"]
 			set qb [nda get "quoteserv/[curctx net]/quotes/$ndacname/u$qtn"]
 			if {$qt != ""} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.qheader $qtn $qb]
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.quote $qt]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.qheader $qtn $qb]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.quote $qt]
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
 			}
 		}
 		"gvi*" {
 			set qtn [lindex $para 0]
-			if {![string is integer $qtn]} {[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]}
+			if {![string is integer $qtn]} {% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.usevalidint]}
 			set qt [nda get "quoteserv/[curctx net]/gquotes/q$qtn"]
 			set qb [nda get "quoteserv/[curctx net]/gquotes/u$qtn"]
 			if {$qt != ""} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.qheader $qtn $qb]
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.quote $qt]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.qheader $qtn $qb]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.quote $qt]
 			} {
-				[curctx proto] privmsg [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
+				% privmsg [tnda get "quoteserv/[curctx net]/ourid"] $chan [gettext quoteserv.noresults]
 			}
 		}
 		"he*" {
@@ -282,7 +283,7 @@ proc quoteservdo {n chan from m} {
 			set helplist [tnda get "openconf/[ndcenc qshelp]/n1"]
 			dictassign $helplist main helpfile
 			foreach {helpline} $helpfile {
-				[curctx proto] notice [curctx sock] [tnda get "quoteserv/[curctx net]/ourid"] $from $helpline
+				% notice [tnda get "quoteserv/[curctx net]/ourid"] $from $helpline
 			}
 		}
 	}

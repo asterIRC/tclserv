@@ -120,7 +120,7 @@ proc svc.rehash {} {
 
 svc.rehash
 #by now we've loaded everything
-callbind - evnt - "confloaded" loaded
+firellbind - evnt - "confloaded" loaded
 
 #load from cfg file, not here
 

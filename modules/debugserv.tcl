@@ -1,10 +1,11 @@
 blocktnd debugserv
 
-llbind - evnt - confloaded debugserv.connect
+llbind - evnt - alive debugserv.connect
 
 proc debugserv.connect {arg} {
 	puts stdout [format "there are %s debugserv blocks" [set blocks [tnda get "openconf/[ndcenc debugserv]/blocks"]]]
 	for {set i 1} {$i < ($blocks + 1)} {incr i} {
+		if {[string tolower [lindex [tnda get [format "openconf/%s/hdr%s" [ndcenc debugserv] $i]] 0]] != [string tolower $arg]} {continue}
 		after 1000 [list debugserv.oneintro [tnda get [format "openconf/%s/hdr%s" [ndcenc debugserv] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc debugserv] $i]]]
 	}
 }
@@ -27,7 +28,7 @@ proc debugserv.find6sid {n s {hunting 0}} {
 }
 
 proc debugservenabled {chan} {
-	if {[string tolower $chan] != [string tolower [tnda get "debugserv/[curctx]logchan"]} {return 0}
+	if {[string tolower $chan] != [string tolower [tnda get "debugserv/[curctx net]/logchan"]]} {return 0}
 	return 1
 }
 
@@ -39,21 +40,31 @@ proc debugserv.oneintro {headline block} {
 	tnda set "debugserv/$net/logchan" $logchan
 	#tnda set "debugserv/$net/nspass" $nspass
 	setctx $net
-	if {[% intclient2uid [tnda get "debugserv/$net/ourid"]] == ""} {$::nettype($net) sendUid $nsock $nick $ident $host $host [set ourid [$::nettype($net) getfreeuid $net]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes}
+	if {[% intclient2uid [tnda get "debugserv/$net/ourid"]] == ""} {% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes}
+	set ouroid [tnda get "debugserv/$net/ourid"]
+	if {[info exists ourid]} {tnda set "debugserv/$net/ourid" $ourid} {set ourid [tnda get "debugserv/$net/ourid"]}
+	unllbindall $nsock pub - ".rehash"
+	unllbindall $nsock pub - ".metadata"
+	unllbindall $nsock msg $ourid "rehash"
+	unllbindall $nsock msg $ourid "metadata"
+	if {$ouroid != $ourid} {
+		unllbindall $nsock msg $ouroid "rehash"
+		unllbindall $nsock msg $ouroid "metadata"
+	}
 	setuctx $nick
-	tnda set "debugserv/$net/ourid" $ourid
 	llbind $nsock pub - ".metadata" [list debugserv.pmetadata $net]
 	llbind $nsock pub - ".rehash" [list debugserv.crehash $net]
 	if {[string length $nspass] != 0 && [string length $nickserv] != 0} {
 		# only works if nettype is ts6!
-		if {[string first [debugserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $net $nickserv]] == 0} {
-			$::nettype($net) privmsg $nsock $ourid $nickserv $nspass
+		if {[string first [debugserv.find6sid $net $nsserv] [% nick2uid $nickserv]] == 0} {
+			% privmsg $ourid $nickserv $nspass
 		} {
-			$::nettype($net) privmsg $nsock $ourid $logchan [gettext debugserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [debugserv.find6sid $net $nsserv]]
+			% privmsg $ourid $logchan [gettext debugserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [debugserv.find6sid $net $nsserv]]
 		}
 	}
-	after 650 $::nettype($net) putjoin $nsock $ourid $logchan
-	after 700 [list $::nettype($net) putmode $nsock $ourid $logchan "+ao" [format "%s %s" [$::nettype($net) intclient2uid $net $ourid] [$::nettype($net) intclient2uid $net $ourid]]]
+	after 650 % putjoin $ourid $logchan
+	after 700 [list % putmode $ourid $logchan "+ao" [format "%s %s" [% intclient2uid $ourid] [% intclient2uid $ourid]]]
+
 	llbind $nsock msg [tnda get "debugserv/$net/ourid"] "metadata" [list debugserv.metadata $net]
 	llbind $nsock msg [tnda get "debugserv/$net/ourid"] "rehash" [list debugserv.rehash $net]
 #	llbind $nsock pub - "gettext" [list debugserv.gettext $net]
@@ -63,52 +74,31 @@ proc debugserv.oneintro {headline block} {
 
 proc debugserv.rehash {n i m} {debugserv.crehash $n $i $i $m}
 
-proc operHasPrivilege {n i p} {
-	# this bit requires irca.
-	set metadatum [tnda get "metadata/$n/$i/[ndcenc PRIVS]"]
-	set md [split $metadatum " "]
-	set pl [split $p " ,"]
-	foreach {pv} $pl {
-		if {[lsearch $md $pv] != -1} {return 1}
-	}
-	return 0
-}
-
-proc operHasAllPrivileges {n i p} {
-	# this bit requires irca.
-	set metadatum [tnda get "metadata/$n/$i/[ndcenc PRIVS]"]
-	set md [split $metadatum " "]
-	set pl [split $p " ,"]
-	foreach {pv} $pl {
-		if {[lsearch $md $pv] == -1} {return 0}
-	}
-	return 1
-}
-
 proc debugserv.crehash {n c i m} {
 	if {![operHasPrivilege $n $i [tnda get "debugserv/$n/rehashprivs"]]} {
-		$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [gettext debugserv.youvenoprivs2 $i [join [split [tnda get "debugserv/$n/rehashprivs"] ", "] ", or "]]
+		% [expr {$c != $i ? "privmsg" : "notice"}] [tnda get "debugserv/$n/ourid"] $c [gettext debugserv.youvenoprivs2 $i [join [split [tnda get "debugserv/$n/rehashprivs"] ", "] ", or "]]
 	} {
 		after 500 [list uplevel #0 [list svc.rehash]]
-		$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [gettext debugserv.rehashed [$::nettype($n) uid2nick $n $i]]
+		% [expr {$c != $i ? "privmsg" : "notice"}] [tnda get "debugserv/$n/ourid"] $c [gettext debugserv.rehashed [% uid2nick $i]]
 	}
 }
 
 proc debugserv.pmetadata {n c i m} {
 	# net chan id msg
 	setctx $n
-	if {($c != $i) && ![debugservenabled]} {return}
+	if {($c != $i) && ![debugservenabled $c]} {return}
 	set metadatalist [tnda get "metadata/$n/$i"]
 	if {[llength $metadatalist] < 2} {
-		$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [gettext debugserv.nometadata [$::nettype($n) uid2nick $n $i]]
+		% [expr {$c != $i ? "privmsg" : "notice"}] [tnda get "debugserv/$n/ourid"] $c [gettext debugserv.nometadata [% uid2nick $i]]
 	}
 	foreach {.datum value} $metadatalist {
 		set datum [ndcdec ${.datum}]
-		$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [set totmsg [gettext debugserv.metadata $datum [$::nettype($n) uid2nick $n $i] $value]]
+		% [expr {$c != $i ? "privmsg" : "notice"}] [tnda get "debugserv/$n/ourid"] $c [set totmsg [gettext debugserv.metadata $datum [% uid2nick $i] $value]]
 	}
-	$::nettype($n) [expr {$c != $i ? "privmsg" : "notice"}] [curctx sock] [tnda get "debugserv/$n/ourid"] $c [gettext [expr {[tnda get "oper/$n/$i"] == 1 ? "debugserv.isoper" : "debugserv.isntoper"}] [$::nettype($n) uid2nick $n $i] $i]
+	% [expr {$c != $i ? "privmsg" : "notice"}] [tnda get "debugserv/$n/ourid"] $c [gettext [expr {[tnda get "oper/$n/$i"] == 1 ? "debugserv.isoper" : "debugserv.isntoper"}] [% uid2nick $i] $i]
 }
 
 proc debugserv.metadata {n i m} {
 	debugserv.pmetadata $n $i $i $m
 }
+

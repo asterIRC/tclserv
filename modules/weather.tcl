@@ -1,13 +1,14 @@
 blocktnd weatherserv
 blocktnd wshelp
 
-source weatherserv.help
+#source weatherserv.help
 
-llbind - evnt - confloaded weatherserv.connect
+llbind - evnt - alive weatherserv.connect
 
 proc weatherserv.connect {arg} {
 	puts stdout [format "there are %s weatherserv blocks" [set blocks [tnda get "openconf/[ndcenc weatherserv]/blocks"]]]
 	for {set i 1} {$i < ($blocks + 1)} {incr i} {
+		if {[string tolower [lindex [tnda get [format "openconf/%s/hdr%s" [ndcenc weatherserv] $i]] 0]] != [string tolower $arg]} {continue}
 		after 1000 [list weatherserv.oneintro [tnda get [format "openconf/%s/hdr%s" [ndcenc weatherserv] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc weatherserv] $i]]]
 	}
 }
@@ -39,20 +40,20 @@ proc weatherserv.oneintro {headline block} {
 	tnda set "weather/[curctx net]/logchan" $logchan
 	#tnda set "weather/[curctx net]/nspass" $nspass
 	setctx $net
-	$::nettype($net) sendUid $nsock $nick $ident $host $host [set ourid [$::nettype($net) getfreeuid $net]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
+	% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
 	tnda set "weather/[curctx net]/ourid" $ourid
 #	llbind $nsock pub - ".metadata" [list weatherserv.pmetadata $net]
 #	llbind $nsock pub - ".rehash" [list weatherserv.crehash $net]
 	if {[string length $nspass] != 0 && [string length $nickserv] != 0} {
 		# only works if nettype is ts6!
-		if {[string first [weatherserv.find6sid $net $nsserv] [$::nettype($net) nick2uid $net $nickserv]] == 0} {
-			$::nettype($net) privmsg $nsock $ourid $nickserv $nspass
+		if {[string first [weatherserv.find6sid $net $nsserv] [% nick2uid $nickserv]] == 0} {
+			% privmsg $ourid $nickserv $nspass
 		} {
-			$::nettype($net) privmsg $nsock $ourid $logchan [gettext weatherserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [weatherserv.find6sid $net $nsserv]]
+			% privmsg $ourid $logchan [gettext weatherserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [weatherserv.find6sid $net $nsserv]]
 		}
 	}
-	after 650 [list $::nettype($net) putjoin $nsock $ourid $logchan]
-	after 950 [list $::nettype($net) putmode $nsock $ourid $logchan "+ao" [format "%s %s" [$::nettype($net) intclient2uid $net $ourid] [$::nettype($net) intclient2uid $net $ourid]]]
+	after 650 [list % putjoin $ourid $logchan]
+	after 950 [list % putmode $ourid $logchan "+ao" [format "%s %s" [% intclient2uid $ourid] [% intclient2uid $ourid]]]
 #	llbind $nsock msg [tnda get "weather/[curctx net]/ourid"] "metadata" [list weatherserv.metadata $net]
 #	llbind $nsock msg [tnda get "weather/[curctx net]/ourid"] "rehash" [list weatherserv.rehash $net]
 #	llbind $nsock pub - "gettext" [list weatherserv.gettext $net]
@@ -65,7 +66,7 @@ proc weatherserv.oneintro {headline block} {
 		puts stdout "to join $chan on [curctx]"
 		if {1!=$is} {continue}
 		weatherjoin [ndadec $chan] 0
-#		[curctx proto] putjoin [curctx sock] [tnda get "weather/[curctx net]/ourid"] [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
+#		% putjoin [tnda get "weather/[curctx net]/ourid"] [::base64::decode [string map {[ /} $chan]] [nda get "regchan/$chan/ts"]
 #		tnda set "channels/$chan/ts" [nda get "regchan/$chan/$::netname([curctx sock])/ts"]
 	}
 }
@@ -77,16 +78,16 @@ llbind [curctx sock] request "weather" "-" weatherjoin
 proc weatherjoin {chan {setting 1}} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
 	puts stdout "to join $chan on [curctx]"
-	[curctx proto] putjoin [curctx sock] [tnda get "weather/[curctx net]/ourid"] $chan
-	[curctx proto] putmode [curctx sock] [tnda get "weather/[curctx net]/ourid"] $chan "+ao" \
-		[format "%s %s" [[curctx proto] intclient2uid [curctx net] [tnda get "weather/[curctx net]/ourid"]]\
-		 [[curctx proto] intclient2uid [curctx net] [tnda get "weather/[curctx net]/ourid"]]]
+	% putjoin [tnda get "weather/[curctx net]/ourid"] $chan
+	% putmode [tnda get "weather/[curctx net]/ourid"] $chan "+ao" \
+		[format "%s %s" [% intclient2uid [tnda get "weather/[curctx net]/ourid"]]\
+		 [% intclient2uid [tnda get "weather/[curctx net]/ourid"]]]
 	if {$setting} {nda set "weather/[curctx net]/regchan/$ndacname" 1}
 }
 
 proc weatherpart {chan {who "the script"} {msg isunused}} {
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
-	[curctx proto] putpart [curctx sock] [tnda get "weather/[curctx net]/ourid"] $chan [gettext weather.left $who]
+	% putpart [tnda get "weather/[curctx net]/ourid"] $chan [gettext weather.left $who]
 	nda set "weather/[curctx net]/regchan/$ndacname" 0
 	nda unset "weather/[curctx net]/regchan/$ndacname"
 }
