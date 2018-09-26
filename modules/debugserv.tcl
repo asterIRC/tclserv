@@ -32,10 +32,15 @@ proc debugservenabled {chan} {
 	return 1
 }
 
+proc debugserv.armdns {headline block} {
+	
+}
+
 proc debugserv.oneintro {headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
-	dictassign $block logchan logchan nick nick ident ident host host modes modes realname realname rehashprivs rehashprivs idcommand nspass nickserv nickserv nsserv nsserv
+	dictassign $block logchan logchan nick nick ident ident host host modes modes realname realname rehashprivs rehashprivs idcommand nspass nickserv nickserv nsserv nsserv \
+	                  dnsconf dnsconf
 	tnda set "debugserv/$net/rehashprivs" $rehashprivs
 	tnda set "debugserv/$net/logchan" $logchan
 	#tnda set "debugserv/$net/nspass" $nspass
@@ -68,8 +73,15 @@ proc debugserv.oneintro {headline block} {
 	llbind $nsock msg [tnda get "debugserv/$net/ourid"] "metadata" [list debugserv.metadata $net]
 	llbind $nsock msg [tnda get "debugserv/$net/ourid"] "rehash" [list debugserv.rehash $net]
 #	llbind $nsock pub - "gettext" [list debugserv.gettext $net]
+	llbind $nsock pub - "!usage" [list debugserv.pusage $net]
+	debugserv.armdns $headline $dnsconf
 	puts stdout "llbind $nsock msg [tnda get "debugserv/$net/ourid"] metadata [list debugserv.metdata $net]"
 	puts stdout [format "Connected for %s: %s %s %s" $net $nick $ident $host]
+}
+
+proc debugserv.pusage {n c i m} {
+	set uptime [exec uptime]
+	% [expr {$c != $i ? "privmsg" : "notice"}] [tnda get "debugserv/$n/ourid"] $c $uptime
 }
 
 proc debugserv.rehash {n i m} {debugserv.crehash $n $i $i $m}

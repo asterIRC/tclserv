@@ -44,7 +44,7 @@ proc ::ts6::sendUid {sck nick ident host dhost uid {realname "* Unknown *"} {mod
 	set sendid [::ts6::b64e $uid]
 	set sendnn [string repeat "A" [expr {6-[string length $sendid]}]]
 	append sendnn $sendid
-	if {![tnda get "ts6/$::netname($sck)/euid"]} {
+	if {![tnda get "netinfo/$::netname($sck)/euid"]} {
 		set sl [format ":%s UID %s 1 %s %s %s %s 0 %s%s :%s" $sid $nick [clock format [clock seconds] -format %s] $modes $ident $host $sid $sendnn $realname]
 	} {
 		set sl [format ":%s EUID %s 1 %s %s %s %s 0 %s%s %s * :%s" $sid $nick [clock format [clock seconds] -format %s] $modes $ident $dhost $sid $sendnn $host $realname]
@@ -80,7 +80,7 @@ proc ::ts6::setnick {sck uid newnick} {
 proc ::ts6::sethost {sck targ topic} {
 	set sid [string repeat "0" [expr {3-[string length [::ts6::b64e $::sid($sck)]]}]]
 	append sid [::ts6::b64e $::sid($sck)]
-	if {![tnda get "ts6/$::netname($sck)/euid"]} {
+	if {![tnda get "netinfo/$::netname($sck)/euid"]} {
 		putl $sck [format ":%s ENCAP * CHGHOST %s %s" $sid $targ $topic]
 	} {
 		putl $sck [format ":%s CHGHOST %s %s" $sid $targ $topic]
@@ -231,7 +231,7 @@ proc ::ts6::putjoin {sck uid targ {ts ""}} {
 
 proc ::ts6::validchan {sck channelname} {
 	if {[string is digit [string index $channelname 0]] && [string length $channelname] == 9} {return 0} ;# valid handle, not valid channel
-	if {[string first [string index $channelname 0] [tnda get "ts6/$::netname($sck)/[ndaenc CHANTYPES]"]] != -1} {return 1} ;# could be valid channel, so let's just say yes
+	if {[string first [string index $channelname 0] [tnda get "netinfo/$::netname($sck)/[ndaenc CHANTYPES]"]] != -1} {return 1} ;# could be valid channel, so let's just say yes
 }
 
 proc ::ts6::quitstorm {sck sid comment {doinit 1}} {
@@ -256,6 +256,7 @@ proc ::ts6::irc-main {sck} {
 		putl stdout "We're dead, folks."
 #		firellbind $sck evnt "-" "ts6.dead" $::netname($sck) $sck
 		firellbind $sck evnt "-" "dead" $::netname($sck) $sck
+		firellbind - evnt "-" "dead" $sck $::netname($sck)
 		close $sck
 	}
 	gets $sck line
@@ -302,14 +303,15 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"SQUIT" {
-			set sid [string repeat "0" [expr {3-[string length [::ts6::b64e $::sid($sck)]]}]];append sid [::ts6::b64e $::sid($sck)]
+			set ssid [string repeat "0" [expr {3-[string length [::ts6::b64e $::sid($sck)]]}]];append ssid [::ts6::b64e $::sid($sck)]
 			set failedserver [lindex $comd [expr {$one + 1}]]
 			# is it us?
-			if {$failedserver == $sid} {
+			if {$failedserver == $ssid} {
 				#yes, it's us.
 				putcmdlog "We're dead, folks."
 				firellbind $sck evnt "-" "ts6.dead" $::netname($sck)
 				firellbind $sck evnt "-" "dead" $::netname($sck)
+				firellbind - evnt "-" "dead" $sck $::netname($sck)
 				return
 			}
 			# Mark all servers with an uplink in failedservers as split
@@ -346,37 +348,37 @@ proc ::ts6::irc-main {sck} {
 				foreach {key val} [split $tok "="] {
 					if {$key == "PREFIX"} {
 						# We're in luck! Server advertises its PREFIX in VERSION reply to servers.
-						if {[tnda get "ts6/$::netname($sck)/pfxissjoin"] == 1} {continue}
+						if {[tnda get "netinfo/$::netname($sck)/pfxissjoin"] == 1} {continue}
 						set v [string range $val 1 end]
 						set mod [split $v ")"]
 						set modechar [split [lindex $mod 1] {}]
 						set modepref [split [lindex $mod 0] {}]
 						foreach {c} $modechar {x} $modepref {
-							tnda set "ts6/$::netname($sck)/prefix/$c" $x
+							tnda set "netinfo/$::netname($sck)/prefix/$c" $x
 						}
 						foreach {x} $modechar {c} $modepref {
-							tnda set "ts6/$::netname($sck)/pfxchar/$c" $x
+							tnda set "netinfo/$::netname($sck)/pfxchar/$c" $x
 						}
 					} elseif {$key == "SJOIN"} {
 						# We're in luck! Server advertises its PREFIX in VERSION reply to servers.
-						tnda set "ts6/$::netname($sck)/pfxissjoin" 1
+						tnda set "netinfo/$::netname($sck)/pfxissjoin" 1
 						set v [string range $val 1 end]
 						set mod [split $v ")"]
 						set modechar [split [lindex $mod 1] {}]
 						set modepref [split [lindex $mod 0] {}]
 						foreach {c} $modechar {x} $modepref {
-							tnda set "ts6/$::netname($sck)/prefix/$c" $x
+							tnda set "netinfo/$::netname($sck)/prefix/$c" $x
 						}
 						foreach {x} $modechar {c} $modepref {
-							tnda set "ts6/$::netname($sck)/pfxchar/$c" $x
+							tnda set "netinfo/$::netname($sck)/pfxchar/$c" $x
 						}
 					} elseif {$key == "CHANMODES"} {
 						set spt [split $val ","]
-						tnda set "ts6/$::netname($sck)/chmparm" [format "%s%s" [lindex $spt 0] [lindex $spt 1]]
-						tnda set "ts6/$::netname($sck)/chmpartparm" [lindex $spt 2]
-						tnda set "ts6/$::netname($sck)/chmnoparm" [lindex $spt 3]
+						tnda set "netinfo/$::netname($sck)/chmparm" [format "%s%s" [lindex $spt 0] [lindex $spt 1]]
+						tnda set "netinfo/$::netname($sck)/chmpartparm" [lindex $spt 2]
+						tnda set "netinfo/$::netname($sck)/chmnoparm" [lindex $spt 3]
 					} else {
-						tnda set "ts6/$::netname($sck)/[ndaenc $key]" $val
+						tnda set "netinfo/$::netname($sck)/[ndaenc $key]" $val
 					}
 				}
 			}
@@ -395,7 +397,7 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"NOTICE" {
-			if {![tnda get "ts6/$::netname($sck)/connected"]} {return}
+			if {![tnda get "netinfo/$::netname($sck)/connected"]} {return}
 			if {[::ts6::validchan $sck [lindex $comd 2]]} {
 				set client chan
 				firellbind $sck pubnotc "-" [string tolower [lindex [split $payload " "] 0]] [lindex $comd 2] [lindex $comd 0] [join [lrange [split $payload " "] 1 end] " "]
@@ -447,7 +449,7 @@ proc ::ts6::irc-main {sck} {
 					set state 1
 				} elseif {$c == "-"} {
 					set state 0
-				} elseif {[string match [format "*%s*" $c] [tnda get "ts6/$::netname($sck)/chmparm"]] || ($state&&[string match [format "*%s*" $c] [tnda get "ts6/$::netname($sck)/chmpartparm"]])} {
+				} elseif {[string match [format "*%s*" $c] [tnda get "netinfo/$::netname($sck)/chmparm"]] || ($state&&[string match [format "*%s*" $c] [tnda get "netinfo/$::netname($sck)/chmpartparm"]])} {
 					firellbind $sck mode "-" [expr {$state ? "+" : "-"}] $c [lindex $comd 0] [lindex $comd 3] [lindex $comd [incr ctr]] $::netname($sck)
 				} else {
 					firellbind $sck mode "-" [expr {$state ? "+" : "-"}] $c [lindex $comd 0] [lindex $comd 3] "" $::netname($sck)
@@ -476,10 +478,10 @@ proc ::ts6::irc-main {sck} {
 				set uo ""
 				set state uo
 				set un [string range $nick end-8 end]
-				set uo [string map [tnda get "ts6/$::netname($sck)/prefix"] [string range $nick 0 end-9]]
+				set uo [string map [tnda get "netinfo/$::netname($sck)/prefix"] [string range $nick 0 end-9]]
 #				foreach {c} [split $nick {}] {
 #					if {[string is digit $c]} {set state un}
-#					if {$state == "uo"} {set c [tnda get "ts6/$::netname($sck)/prefix/$c"] ; }
+#					if {$state == "uo"} {set c [tnda get "netinfo/$::netname($sck)/prefix/$c"] ; }
 #					if {"un"==$state} {append un $c}
 #					if {"uo"==$state} {append uo $c}
 #				}
@@ -643,11 +645,11 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"CAPAB" {
-			tnda set "ts6/$::netname($sck)/euid" 0
+			tnda set "netinfo/$::netname($sck)/euid" 0
 			foreach {cw} [split $payload " "] {
-				if {$cw == "EUID"} {tnda set "ts6/$::netname($sck)/euid" 1}
+				if {$cw == "EUID"} {tnda set "netinfo/$::netname($sck)/euid" 1}
 			}
-			tnda set "ts6/$::netname($sck)/connected" 1
+			tnda set "netinfo/$::netname($sck)/connected" 1
 		}
 
 		"PING" {
@@ -673,12 +675,12 @@ proc ::ts6::login {sck {osid "42"} {password "link"} {servname "net"} {servernam
 	set sock($servname) $sck
 	set sid($sck) $osid
 	set sid($servname) $osid
-	tnda set "ts6/$::netname($sck)/connected" 0
-	tnda set "ts6/$::netname($sck)/euid" 0
+	tnda set "netinfo/$::netname($sck)/connected" 0
+	tnda set "netinfo/$::netname($sck)/euid" 0
 	#if {$halfops == ""} {tnda set "pfx/halfop" v} {tnda set "pfx/halfop" $halfops}
 	#if {![info exists ::ts6(ownermode)]} {tnda set "pfx/owner" o} {tnda set "pfx/owner" $ownermode)}
 	#if {![info exists ::ts6(protectmode)]} {tnda set "pfx/protect" o} {tnda set "pfx/protect" $protectmode}
-	if {$useeuid == ""} {tnda set "ts6/$::netname($sck)/euid" 1} {tnda set "ts6/$::netname($sck)/euid" $useeuid}
+	if {$useeuid == ""} {tnda set "netinfo/$::netname($sck)/euid" 1} {tnda set "netinfo/$::netname($sck)/euid" $useeuid}
 	
 	putl $sck "PASS $password TS 6 :$num"
 	putl $sck "CAPAB :UNKLN BAN KLN RSFNC EUID ENCAP IE EX CLUSTER EOPMOD SVS SERVICES QS"
@@ -741,7 +743,7 @@ proc ::ts6::getupfx {sck chan u} {
 proc ::ts6::getpfxchars {sck modes} {
 	set o ""
 	foreach {c} [split $modes {}] {
-		append o [nda get "ts6/$::netname($sck)/prefix/$c"]
+		append o [nda get "netinfo/$::netname($sck)/prefix/$c"]
 	}
 	return $o
 }
@@ -755,7 +757,7 @@ proc ::ts6::getcertfp {sck nick} {
 proc ::ts6::checkop {mc s c p n} {
 	set f $s
 	set t $c
-	if {[tnda get "ts6/$n/pfxchar/$mc"]==""} {return}
+	if {[tnda get "netinfo/$n/pfxchar/$mc"]==""} {return}
 putcmdlog "up $mc $f $t $p $n"
   set chan [string map {/ [} [::base64::encode [string tolower $t]]]
   tnda set "channels/$n/$chan/modes/$p" [format {%s%s} [string map [list $mc ""] [tnda get "channels/$n/$chan/modes/$p"]] $mc]
@@ -764,7 +766,7 @@ putcmdlog "up $mc $f $t $p $n"
 proc ::ts6::checkdeop {mc s c p n} {
 	set f $s
 	set t $c
-	if {[tnda get "ts6/$n/pfxchar/$mc"]==""} {return}
+	if {[tnda get "netinfo/$n/pfxchar/$mc"]==""} {return}
 putcmdlog "down $mc $f $t $p $n"
   set chan [string map {/ [} [::base64::encode [string tolower $t]]]
   tnda set "channels/$n/$chan/modes/$p" [string map [list $mc ""] [tnda get "channels/$n/$chan/modes/$p"]]

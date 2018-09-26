@@ -39,14 +39,15 @@ proc mknetwork {headlines block} {
 			lappend pfx $p
 			lappend pfx $m
 		}
-		tnda set "ts6/$netname/prefix" $pfx
+		tnda set "netinfo/$netname/prefix" $pfx
 	} {
 		# safe defaults, will cover charybdis and chatircd
-		tnda set "ts6/$netname/prefix" [list @ o % h + v]
+		tnda set "netinfo/$netname/prefix" [list @ o % h + v]
 	}
 	# open a connection
 	set socke [connect $host $port [list $proto irc-main]]
 	after 500 $proto login $socke $numeric $pass $netname $servername
+	llbind - dead - $socke [list after 5000 [list mknetwork $headlines $block]]
 	# store it up
 #	postblock network $headlines $block
 }

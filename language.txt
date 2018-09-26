@@ -20,3 +20,4 @@ quoteserv.enopriv 14>5>4> You do not have the required privileges to execute
 quoteserv.removed 14>3>9> Removed quote number %s (by %s) from database.
 quoteserv.removedcontents 14>2>12> Removed quote was: %s
 quoteserv.left 14>7>8> The quote service was requested to leave by %s. Ja mata!
+quoteserv.disabled 14>7>8> Sorry, the quote service is disabled for %s.
