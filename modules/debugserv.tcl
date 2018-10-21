@@ -40,7 +40,8 @@ proc debugserv.oneintro {headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
 	dictassign $block logchan logchan nick nick ident ident host host modes modes realname realname rehashprivs rehashprivs idcommand nspass nickserv nickserv nsserv nsserv \
-	                  dnsconf dnsconf
+	                  dnsconf dnsconf dbname dbname
+	if {$dbname == ""} {set dbname debugserv}
 	tnda set "debugserv/$net/rehashprivs" $rehashprivs
 	tnda set "debugserv/$net/logchan" $logchan
 	#tnda set "debugserv/$net/nspass" $nspass
@@ -64,7 +65,7 @@ proc debugserv.oneintro {headline block} {
 		if {[string first [debugserv.find6sid $net $nsserv] [% nick2uid $nickserv]] == 0} {
 			% privmsg $ourid $nickserv $nspass
 		} {
-			% privmsg $ourid $logchan [gettext debugserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [debugserv.find6sid $net $nsserv]]
+			% privmsg $ourid $logchan [gettext debugserv.impostornickserv $nickserv [% nick2uid $nickserv] $nsserv [debugserv.find6sid $net $nsserv]]
 		}
 	}
 	after 650 % putjoin $ourid $logchan

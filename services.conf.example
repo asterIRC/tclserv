@@ -7,6 +7,7 @@ network "pand" "services.invalid" {
 	pass	link
 	proto	ts6
 	prefix	{*~&@%+ yqaohv}
+	isupport	"CHANMODES=beIM,k,flj,CDFQRTXcgimnprstu CHANLIMIT=&'#+\"1234567890:100 PREFIX=(yqaohv)*~&@%+ MAXLIST=beIM:100 MODES=4 NETWORK=Pandersticks STATUSMSG=@ PRIVILEGEMSG=@,.,qaohv SJOIN=(yqaohv)*~&@%+"
 }
 
 #old;

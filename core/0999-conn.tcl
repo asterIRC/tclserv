@@ -21,6 +21,7 @@ proc mknetwork {headlines block} {
 	set pass [dict get $block pass]
 	set host [dict get $block host]
 	set port [dict get $block port]
+	set isupport [dict get $block isupport]
 	set servername [lindex $headlines 1]
 	set netname [lindex $headlines 0]
 	if {[catch {set ::sock($netname)} result] == 0} {
@@ -44,10 +45,64 @@ proc mknetwork {headlines block} {
 		# safe defaults, will cover charybdis and chatircd
 		tnda set "netinfo/$netname/prefix" [list @ o % h + v]
 	}
+	if {[dict exists $block type]} {
+		tnda set "netinfo/$netname/type" [dict get $block type]
+	} {	tnda set "netinfo/$netname/type" norm	}
+	if {[string length $isupport] > 0} {
+		foreach {tok} [split $isupport " "] {
+			foreach {key val} [split $tok "="] {
+				if {$key == "PREFIX"} {
+					if {[tnda get "netinfo/$netname/pfxissjoin"] == 1} {continue}
+					set v [string range $val 1 end]
+					set mod [split $v ")"]
+					set modechar [split [lindex $mod 1] {}]
+					set modepref [split [lindex $mod 0] {}]
+					foreach {c} $modechar {x} $modepref {
+						tnda set "netinfo/$netname/prefix/$c" $x
+					}
+					foreach {x} $modechar {c} $modepref {
+						tnda set "netinfo/$netname/pfxchar/$c" $x
+					}
+				} elseif {$key == "SJOIN"} {
+					tnda set "netinfo/$netname/pfxissjoin" 1
+					set v [string range $val 1 end]
+					set mod [split $v ")"]
+					set modechar [split [lindex $mod 1] {}]
+					set modepref [split [lindex $mod 0] {}]
+					foreach {c} $modechar {x} $modepref {
+						tnda set "netinfo/$netname/prefix/$c" $x
+					}
+					foreach {x} $modechar {c} $modepref {
+						tnda set "netinfo/$netname/pfxchar/$c" $x
+					}
+				} elseif {$key == "CHANMODES"} {
+					set spt [split $val ","]
+					tnda set "netinfo/$netname/chmban" [lindex $spt 0]
+					tnda set "netinfo/$netname/chmparm" [format "%s%s" [lindex $spt 0] [lindex $spt 1]]
+					tnda set "netinfo/$netname/chmpartparm" [lindex $spt 2]
+					tnda set "netinfo/$netname/chmnoparm" [lindex $spt 3]
+				} else {
+					tnda set "netinfo/$netname/isupport/[ndaenc $key]" $val
+				}
+			}
+		}
+	}
 	# open a connection
 	set socke [connect $host $port [list $proto irc-main]]
 	after 500 $proto login $socke $numeric $pass $netname $servername
 	llbind - dead - $socke [list after 5000 [list mknetwork $headlines $block]]
+	foreach {def} {
+		protectop protecthalfop protectvoice operit autoop autohalfop autovoice bitch halfbitch voicebitch
+	} {
+		setudef flag $def
+	}
+	tnda set "netinfo/$netname/crontab" [cron add "* * * * *" eval [concat firellmbind $socke time - {[clock format [clock seconds] -format "%M %H %d %m %Y"]} \
+		{[clock format [clock seconds] -format "%M"]} \
+		{[clock format [clock seconds] -format "%H"]} \
+		{[clock format [clock seconds] -format "%d"]} \
+		{[clock format [clock seconds] -format "%m"]} \
+		{[clock format [clock seconds] -format "%Y"]} \
+		]]
 	# store it up
 #	postblock network $headlines $block
 }
