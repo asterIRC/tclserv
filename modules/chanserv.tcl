@@ -41,7 +41,8 @@ proc cs.confighandler {servicename defdbname headline block} {
 
 proc chanserv.oneintro {headline block} {
 	cs.confighandler chanserv chanserv $headline $block
-	dictassign $block config eggconf nick nick
+	dictassign $headline net network
+	dictassign $block config eggconf nick nick ident username host my-hostname 
 
 	bind time -|- "?0 * * * *" checkchannels
 	bind time -|- "?5 * * * *" checkchannels
