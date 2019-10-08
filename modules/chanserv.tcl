@@ -1,7 +1,7 @@
 # ChanServ for TclServ
 # 2018 09 28
 # Copyright ©2018CE AsterIRC
-# All rights reserved. This file is under the GNU GPL; see
+# All rights reserved. This file is *reluctantly* under the GNU GPL; see
 # LICENSE in the project root for information.
 
 #           -----------------//----------------
@@ -17,7 +17,7 @@ llbind - evnt - alive chanserv.connect
 set numversion 1
 
 proc chanserv.connect {arg} {
-	puts stdout [format "there are %s chanserv blocks" [set blocks [tnda get "openconf/[ndcenc chanserv]/blocks"]]]
+	putlog [format "there are %s chanserv blocks" [set blocks [tnda get "openconf/[ndcenc chanserv]/blocks"]]]
 	for {set i 1} {$i < ($blocks + 1)} {incr i} {
 		if {[string tolower [lindex [tnda get [format "openconf/%s/hdr%s" [ndcenc chanserv] $i]] 0]] != [string tolower $arg]} {continue}
 		after 1000 [list chanserv.oneintro [tnda get [format "openconf/%s/hdr%s" [ndcenc chanserv] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc chanserv] $i]]]

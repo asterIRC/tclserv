@@ -234,7 +234,7 @@ proc adduserchan {from msg} {
 	if {![string is integer $addlevel]} {return}
 	if {$addlevel > [nda get "regchan/$ndacname/levels/[tnda get "login/$::netname($::sock($::cs(netname)))/$from"]"]} {$::maintype notice $::sock($::cs(netname)) 77 $from "You can't do that; you're not the channel's Dave";return}
 	if {[nda get "regchan/$ndacname/levels/$adduser"] > [nda get "regchan/$ndacname/levels/[tnda get "login/$::netname($::sock($::cs(netname)))/$from"]"]} {$::maintype notice $::sock($::cs(netname)) 77 $from "You can't do that; the person you're changing the level of is more like Dave than you.";return}
-	if {$adduser == [tnda get "login/$::netname($::sock($::cs(netname)))/$from"]} {$::maintype notice $::sock($::cs(netname)) 77 $from "You can't change your own level, even if you're downgrading. Sorreh :/$::netname($::sock($::cs(netname)))/";return}
+	if {$adduser == [tnda get "login/$::netname($::sock($::cs(netname)))/$from"]} {$::maintype notice $::sock($::cs(netname)) 77 $from "You can't change your own level, even if you're downgrading. Sorreh :/";return}
 	$::maintype notice $::sock($::cs(netname)) 77 $from "Guess what? :) User added."
 	nda set "regchan/$ndacname/levels/[string tolower $adduser]" $addlevel
 }

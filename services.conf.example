@@ -20,6 +20,7 @@ network "pand" "services.invalid" {
 
 loadmodule debugserv
 loadmodule quoteserv
+loadmodule chanserv
 
 # module confs after here, load before here
 
@@ -31,22 +32,31 @@ debugserv "pand" {
 	modes	+oiS
 	comment "Or +oiDS if you dont want it to hear channel convos"
 	comment "idcommand is obvious."
+	realname	"Depanner"
 	nickserv	"NickServ"
 	nsserv	services.umbrellix.net
 	idcommand	"IDENTIFY InvictusWAUS None"
 }
 
-
-quoteserv "umb" {
+quoteserv "panda" {
 	logchan	#services
 	nick	QuoteServ
 	ident	Quote
 	host	Umbrellix/Special/TclServ/QuoteServ
 	modes	+oiS
+	realname	"Quotes Services"
 	comment "Or +oiDS if you dont want it to hear channel convos"
 	comment "NSPass can be a username space password, if your nickserv is an atheme nickserv."
 	nickserv	"NickServ"
 	nsserv	services.umbrellix.net
 	idcommand	"IDENTIFY InvictusWAUS 5467"
 	operflags	"oper:quote,oper:admin"
+}
+
+chanserv "pand" {
+	nick	ChanServ
+	ident	Channel
+	host	Services.Umbrellix.Net
+	modes	+oiS
+	realname	"Channels Services"
 }

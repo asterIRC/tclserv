@@ -1,3 +1,5 @@
+# This portion, of course, is available under the MIT license if not bundled with the rest of TclServ.
+
 proc llbind {sock type client comd script} {
 	set moretodo 1
 	while {0!=$moretodo} {
@@ -25,7 +27,7 @@ proc firellbind {sock type client comd args} {
 	if {""!=[tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"]} {
 		foreach {id script} [tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"] {
 			if {$script != ""} {
-				set scr $script
+				set scr [string range $script 0 120]
 #				lappend $scr $sock
 				foreach {a} $args {
 					lappend scr $a

@@ -1,3 +1,4 @@
-read the code, i'm too lazy to document this shite.
+TclServ
+====
 
-you need php. no questions. you need php. you also need tcl, obviously. but you need php.
+yes, we're working on it

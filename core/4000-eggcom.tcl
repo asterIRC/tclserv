@@ -1,6 +1,7 @@
 #source chanserv.conf
 
 #more thanks to fireegl
+# XXX THIS PORTION BLOCKS NONGPL RELEASE
 
 proc SetUdefDefaults {{name {*}}} {
 	global UdefDefaults
