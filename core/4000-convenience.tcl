@@ -134,6 +134,7 @@ proc finduserbyid {n} {
 	tnda get "login/[curctx net]/$f"
 }
 
+# XXX obsolete; safe to remove?
 proc autoopcheck {c f} {
 	set globe 0
 	if {[channel get $c operit]} {set globe 1}
@@ -147,6 +148,7 @@ proc unixtime {} {
 	return [clock format [clock seconds] -format %s]
 }
 
+# XXX obsolete; safe to remove?
 proc tcs:opcheck {c f {globe 0} {auto nmolv}} {
 #	puts stdout "$c $f"
 	if {[matchattr [tnda get "login/[curctx net]/$f"] |k $c]} {
@@ -203,6 +205,7 @@ proc tcs:opcheck {c f {globe 0} {auto nmolv}} {
 	}
 }
 
+# XXX nobody calls me anymore; obsolete. safe to remove?
 proc bitchopcheck {mc ftp} {
 	set f [lindex $ftp 0]
 	set t [lindex $ftp 1]

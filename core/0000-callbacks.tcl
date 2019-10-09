@@ -74,7 +74,11 @@ proc firellmbind {sock type client comd args} {
 }
 proc putloglev {lev ch msg} {
 	# punt
-	firellmbind [curctx sock] log - [format "%s %s" $ch $lev] $lev $ch $msg
-	firellbind [curctx sock] logall - - $lev $ch $msg
+    foreach level [split $lev {}] {
+	 	firellmbind [curctx sock] log - [format "%s %s" $ch $level] $level $ch $msg
+		firellbind [curctx sock] logall - - $level $ch $msg
+	 	firellmbind - log - [format "%s %s" $ch $level] [curctx net] $level $ch $msg
+		firellbind - logall - - [curctx net] $level $ch $msg
+	}
 }
 proc putlog {msg} {putloglev o * $msg}

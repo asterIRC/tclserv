@@ -1,6 +1,7 @@
 package require tls
 
 # just to have sanity here. don't want a {} dict or a bum array
+# this is for the logging algorithm to work once implemented, too, among other important things
 set ::netname(-) -
 
 proc connect {addr port script} {

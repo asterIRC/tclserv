@@ -3,7 +3,7 @@
 
 
 namespace eval ts6 {
-proc putcmdlog {args} {}
+#proc putcmdlog {args} {}
 proc ::ts6::b64e {numb} {
         set b64 [split "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" {}]
 
@@ -115,7 +115,7 @@ append sid [::ts6::b64e $::sid($sck)]
 proc ::ts6::metadata {sck targ direction type {msg ""}} {
 	set sid [string repeat "0" [expr {3-[string length [::ts6::b64e $::sid($sck)]]}]]
 	append sid [::ts6::b64e $::sid($sck)]
-	if {[string toupper $direction] != "ADD" && [string toupper $direction] != "DELETE"} {putcmdlog "failed METADATA attempt (invalid arguments)";return} ;#no that didn't work
+	if {[string toupper $direction] != "ADD" && [string toupper $direction] != "DELETE"} {putloglev d * "failed METADATA attempt (invalid arguments)";return} ;#no that didn't work
 	if {[string toupper $direction] == "ADD"} {
 		tnda set "metadata/$::netname($sck)/$targ/[ndaenc $type]" $msg
 		putl $sck [format ":%s ENCAP * METADATA %s %s %s :%s" $sid [string toupper $direction] $targ [string toupper $type] $msg]
@@ -302,7 +302,7 @@ proc ::ts6::irc-main {sck} {
 	firellbind $sck raw - [lindex $comd $one] $sourceof [lindex $comd $one] [join [lrange $comd $two end] " "]
 	set erreno [catch {
 	switch -nocase -- [lindex $comd $one] {
-		"479" {putcmdlog $payload}
+		"479" {putloglev d * $payload}
 		"PASS" {
 		#	putquick "PRIVMSG #services :$line"
 			puts stdout "we have a winner! $one"
@@ -337,7 +337,7 @@ proc ::ts6::irc-main {sck} {
 			# is it us?
 			if {$failedserver == $ssid} {
 				#yes, it's us.
-				putcmdlog "We're dead, folks."
+				putloglev d * "We're dead, folks."
 				firellbind $sck evnt "-" "ts6.dead" $::netname($sck)
 				firellbind $sck evnt "-" "dead" $::netname($sck)
 				firellbind - evnt "-" "dead" $sck $::netname($sck)
@@ -586,7 +586,7 @@ proc ::ts6::irc-main {sck} {
 #					if {"un"==$state} {append un $c}
 #					if {"uo"==$state} {append uo $c}
 #				}
-				putcmdlog [format "JOIN %s by nicknumber %s (nick %s, modes %s)" [ndadec $chan] $nick [tnda get "nick/$::netname($sck)/$un"] $uo]
+				putloglev j [ndadec $chan] [format "JOIN %s by nicknumber %s (nick %s, modes %s)" [ndadec $chan] $nick [tnda get "nick/$::netname($sck)/$un"] $uo]
 #				firellbind $sck join "-" "-" [lindex $comd 3] $un $::netname($sck)
 				firellmbind $sck join - [format "%s %s!%s@%s" [lindex $comd 3] [% uid2nick $un] [% uid2ident $un] [% uid2host $un]] $un [lindex $comd 3]
 				tnda set "userchan/$::netname($sck)/$un/$chan" 1
@@ -699,7 +699,7 @@ proc ::ts6::irc-main {sck} {
 				set ocomd [lrange $comd 1 end]
 				set on [lindex $comd 0]
 				set comd [list [::ts6::nick2uid $::netname($sck) $on] {*}$ocomd]
-				putcmdlog [format "Uh-oh, netsplit! %s -> %s has split" $on [::ts6::nick2uid $::netname($sck) $on]]
+				putloglev k * [format "Uh-oh, netsplit! %s -> %s has split" $on [::ts6::nick2uid $::netname($sck) $on]]
 			}
 			foreach {chan _} [tnda get "userchan/$::netname($sck)/[lindex $comd 0]"] {
 				firellbind $sck part "-" "-" [ndadec $chan] [lindex $comd 0] $::netname($sck)
@@ -739,7 +739,7 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"ERROR" {
-			putcmdlog "Recv'd an ERROR $payload from $::netname($sck)"
+			putloglev s * "Recv'd an ERROR $payload from $::netname($sck)"
 		}
 
 		"WHOIS" {
@@ -873,7 +873,7 @@ proc ::ts6::checkop {f t m p} {
 	set mc [string index $m 1]
 	puts stdout [format ":%s MODE %s %s %s" $f $t $m $p]
 	if {[tnda get "netinfo/$n/pfxchar/$mc"]==""} {::ts6::handlemode $f $t $m $p;return}
-putcmdlog "up $mc $f $t $p $n"
+putloglev d * "up $mc $f $t $p $n"
   set chan [string map {/ [} [::base64::encode [string tolower $t]]]
   tnda set "channels/$n/$chan/status/$p" [format {%s%s} [string map [list $mc ""] [tnda get "channels/$n/$chan/status/$p"]] $mc]
 }
@@ -883,7 +883,7 @@ proc ::ts6::checkdeop {f t m p} {
 	set mc [string index $m 1]
 	puts stdout [format ":%s MODE %s %s %s" $f $t $m $p]
 	if {[tnda get "netinfo/$n/pfxchar/$mc"]==""} {::ts6::handlemode $f $t $m $p;return}
-putcmdlog "down $mc $f $t $p $n"
+putloglev d * "down $mc $f $t $p $n"
   set chan [string map {/ [} [::base64::encode [string tolower $t]]]
   tnda set "channels/$n/$chan/status/$p" [string map [list $mc ""] [tnda get "channels/$n/$chan/status/$p"]]
 }
