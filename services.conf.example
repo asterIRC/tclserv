@@ -1,6 +1,7 @@
 # TCLServ Config File
+# This is a valid Tcl script when sourced by TCLServ
 
-# needs prefix for ts6
+# needs prefix for ts6; this example is for irca. Give it the isupport from your ircd if you are running some other TS6.
 network "pand" "services.invalid" {
 	host 127.0.0.1 port +6697
 	numeric 53
@@ -38,7 +39,7 @@ debugserv "pand" {
 	idcommand	"IDENTIFY InvictusWAUS None"
 }
 
-quoteserv "panda" {
+quoteserv "pand" {
 	logchan	#services
 	nick	QuoteServ
 	ident	Quote
@@ -53,10 +54,16 @@ quoteserv "panda" {
 	operflags	"oper:quote,oper:admin"
 }
 
-chanserv "pand" {
+# Syntax for ChanServ's header is different.
+# Instead of just being  network, it is network servicename.
+# This is because ChanServ is not ChanServ, but a script runner.
+# the config is referenced relative to the working directory when you
+# start TclServ.
+chanserv "pand" "ChanServ" {
 	nick	ChanServ
 	ident	Channel
 	host	Services.Umbrellix.Net
 	modes	+oiS
+	config	chanserv.conf
 	realname	"Channels Services"
 }

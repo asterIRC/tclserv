@@ -27,6 +27,7 @@ proc chanserv.connect {arg} {
 proc cs.confighandler {servicename defdbname headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
+	set servicename [format "%s.%s" $servicename [lindex $headline 1]]
 	dictassign $block nick nick ident ident host host modes modes realname realname
 	if {[llength [tnda get "service/$net/$servicename/config"]] != 0} {return -code error "<$servicename> O damn, I'm already loaded for $net!"}
 	tnda set "service/$net/$servicename/config" $block

@@ -33,7 +33,9 @@ proc firellbind {sock type client comd args} {
 					lappend scr $a
 				}
 				if {[set errcode [catch {eval $scr} erre]] > 0} {
-					puts stdout [format "in script %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $scr $errcode $erre]
+					foreach logline [split [format "in script %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $scr $errcode $erre] "\n"] {
+						putloglev o * $logline
+					}
 					firellbind $sock evnt - error $erre {*}$scr
 				}
 			}
@@ -62,7 +64,9 @@ proc firellmbind {sock type client comd args} {
 						lappend scr $a
 					}
 					if {[set errcode [catch {eval $scr} erre]] > 0} {
-						puts stdout [format "in script (#%s) %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $id $scr $errcode $erre]
+						foreach logline [split [format "in script (#%s) %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $id $scr $errcode $erre] "\n"] {
+							putloglev o * $logline
+						}
 						firellbind $sock evnt - error $erre {*}$scr
 					}
 				}
