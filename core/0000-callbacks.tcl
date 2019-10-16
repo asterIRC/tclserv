@@ -21,7 +21,7 @@ proc unllbindall {sock type client comd} {
 proc firellbind {sock type client comd args} {
 #	puts stdout "$sock $type $client [ndcenc $comd] $args"
 	global globuctx globctx
-	set globctx $::netname($sock)
+	if {$sock == "-"} {} {set globctx $::netname($sock)}
 	set oldglobuctx $globuctx
 	if {$client == "-"} {set globuctx ""} {set globuctx $client}
 	if {""!=[tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"]} {
@@ -50,7 +50,7 @@ proc firellbind {sock type client comd args} {
 proc firellmbind {sock type client comd args} {
 #	puts stdout "$sock $type $client [ndcenc $comd] $args"
 	global globuctx globctx
-	set globctx $::netname($sock)
+	if {$sock == "-"} {} {set globctx $::netname($sock)}
 	set oldglobuctx $globuctx
 	if {$client == "-"} {set globuctx ""} {set globuctx $client}
 	foreach {comde scripts} [tnda get "llbinds/$::netname($sock)/$type/$client"] {
@@ -77,6 +77,8 @@ proc firellmbind {sock type client comd args} {
 	#if {""!=[tnda get "llbinds/$type/-/[ndcenc $comd]"]} {foreach {id script} [tnda get "llbinds/$type/-/[ndcenc $comd]"] {$script [lindex $args 0] [lrange $args 1 end]};return}
 }
 proc putloglev {lev ch msg} {
+	global globuctx globctx
+	set oldglobuctx $globuctx
 	# punt
     foreach level [split $lev {}] {
 	 	firellmbind [curctx sock] log - [format "%s %s" $ch $level] $level $ch $msg
@@ -84,5 +86,6 @@ proc putloglev {lev ch msg} {
 	 	firellmbind - log - [format "%s %s" $ch $level] [curctx net] $level $ch $msg
 		firellbind - logall - - [curctx net] $level $ch $msg
 	}
+	set globuctx $oldglobuctx
 }
 proc putlog {msg} {putloglev o * $msg}

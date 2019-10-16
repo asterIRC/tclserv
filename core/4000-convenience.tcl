@@ -259,7 +259,7 @@ proc timers {} {set t {}; foreach a [after info] {lappend t "0 [lindex [after in
 proc killtimer id {return [after cancel $id]}
 proc killutimer id {return [after cancel $id]}
 
-proc isbotnick {n} {return [expr {$n == $::globuctx}]}
+proc isbotnick {n} {return [expr {$n == [curctx user] || $n == [curctx uid]}]}
 
 proc setctx {ctx} {
 	global globctx
@@ -740,7 +740,7 @@ proc bind {type flag text script} {
 	set ctxuser [curctx unum]
 	if {[lsearch -exact $::nonusertypes [string tolower $type]] != -1} {set binduser "-"} {set binduser $ctxuser}
 	if {[lsearch -exact $::lowertypes [string tolower $type]] != -1} {set text [string tolower $text]}
-	puts stdout [list llbind $ctxsock $type $binduser $text [list isetupthenrun [list [curctx net] $ctxsock $type $ctxuser $flag $text] $script]]
+	#puts stdout [list llbind $ctxsock $type $binduser $text [list isetupthenrun [list [curctx net] $ctxsock $type $ctxuser $flag $text] $script]]
 	return [llbind $ctxsock $type $binduser $text [list isetupthenrun [list [curctx net] $ctxsock $type $ctxuser $flag $text] $script]]
 }
 
@@ -765,8 +765,9 @@ proc unbind {type flag text {scrip ""}} {
 
 proc setupthenrun {opts script args} {
 	lassign $opts netctx sockctx type userctx flags text
+	global globuctx
 	setctx $netctx
-	setuctx [% uid2nick $userctx]
+	set globuctx $userctx
 	foreach {a} $args {
 		lappend script $a
 	}

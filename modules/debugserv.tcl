@@ -1,6 +1,11 @@
 blocktnd debugserv
 
 llbind - evnt - alive debugserv.connect
+llbind - logall - - debug.logall
+
+proc debug.logall {args} {
+	puts stdout [format "%s: %s" "DEBUGSERV LOGALL" [join $args]]
+}
 
 proc debugserv.connect {arg} {
 	puts stdout [format "there are %s debugserv blocks" [set blocks [tnda get "openconf/[ndcenc debugserv]/blocks"]]]

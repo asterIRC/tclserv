@@ -3,6 +3,8 @@ package require tls
 # just to have sanity here. don't want a {} dict or a bum array
 # this is for the logging algorithm to work once implemented, too, among other important things
 set ::netname(-) -
+#set ::nettype(-) -
+#set ::sock(-) -
 
 proc connect {addr port script} {
 	if {[string index $port 0] == "+"} { set port [string range $port 1 end] ; set comd ::tls::socket } {set comd socket}

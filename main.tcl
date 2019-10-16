@@ -84,7 +84,6 @@ if {[file exists services.db]} {
 	set nd [readbfile services.db]
 	puts stdout $nd
 }
-set nd [readbfile services.db]
 
 set globwd [pwd]
 set gettext [list]
