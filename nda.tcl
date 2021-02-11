@@ -66,6 +66,40 @@ namespace eval nda {
 	namespace ensemble create
 }
 
+# alt API:
+namespace eval dbase {
+	proc ::dbase::get {args} {
+		global nd
+		if {[info exists nd] && ![catch {dict get $nd {*}$args} eee]} {return $eee} {return ""}
+	}
+
+	proc ::dbase::set {args} {
+		global nd
+		if {[lindex $args 1] == ""} {
+			return ""
+		}
+		return [dict set nd {*}$args]
+	}
+
+	proc ::dbase::lappend {args} {
+		global nd
+		if {[lindex $args 1] == ""} {
+			return ""
+		}
+		::set orig [::dbase::get {*}[lrange $args 0 end-1]]
+		::lappend orig [lindex $args end]
+		return [dict set nd {*}[lrange $args 0 end-1] $orig]
+	}
+
+	proc ::dbase::unset {args} {
+		global nd
+		return [dict unset nd {*}$args]
+	}
+
+	namespace export *
+	namespace ensemble create
+}
+
 namespace eval tnda {
 	proc ::tnda::get {path} {
 		global tnd

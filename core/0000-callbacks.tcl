@@ -1,3 +1,5 @@
+# This portion, of course, is available under the MIT license if not bundled with the rest of TclServ.
+
 proc llbind {sock type client comd script} {
 	set moretodo 1
 	while {0!=$moretodo} {
@@ -20,21 +22,67 @@ proc firellbind {sock type client comd args} {
 #	puts stdout "$sock $type $client $comd $args"
 	global globuctx globctx
 	set globctx $::netname($sock)
-	set globuctx $client
+	set oldglobuctx $globuctx
+	if {$client == "-"} {set globuctx ""} {set globuctx $client}
 	if {""!=[tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"]} {
 		foreach {id script} [tnda get "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"] {
 			if {$script != ""} {
-				set scr $script
+				set scr [string range $script 0 120]
 #				lappend $scr $sock
 				foreach {a} $args {
 					lappend scr $a
 				}
 				if {[set errcode [catch {eval $scr} erre]] > 0} {
-					puts stdout [format "in script %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $scr $errcode $erre]
+					foreach logline [split [format "in script %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $scr $errcode $erre] "\n"] {
+						putloglev o * $logline
+					}
 					firellbind $sock evnt - error $erre {*}$scr
 				}
 			}
 		};return
+	} {
+#		puts stdout "didn't find one"
 	}
+	set globuctx $oldglobuctx
 	#if {""!=[tnda get "llbinds/$type/-/[ndcenc $comd]"]} {foreach {id script} [tnda get "llbinds/$type/-/[ndcenc $comd]"] {$script [lindex $args 0] [lrange $args 1 end]};return}
 }
+
+proc firellmbind {sock type client comd args} {
+#	puts stdout "$sock $type $client [ndcenc $comd] $args"
+	global globuctx globctx
+	set globctx $::netname($sock)
+	set oldglobuctx $globuctx
+	if {$client == "-"} {set globuctx ""} {set globuctx $client}
+	foreach {comde scripts} [tnda get "llbinds/$::netname($sock)/$type/$client"] {
+		set text [ndadec $comde]
+		if {[string match $text $comd]} {
+			foreach {id script} $scripts {
+				if {$script != ""} {
+					set scr $script
+#					lappend $scr $sock
+					foreach {a} $args {
+						lappend scr $a
+					}
+					if {[set errcode [catch {eval $scr} erre]] > 0} {
+						foreach logline [split [format "in script (#%s) %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $id $scr $errcode $erre] "\n"] {
+							putloglev o * $logline
+						}
+						firellbind $sock evnt - error $erre {*}$scr
+					}
+				}
+			}
+		}
+	}
+	set globuctx $oldglobuctx
+	#if {""!=[tnda get "llbinds/$type/-/[ndcenc $comd]"]} {foreach {id script} [tnda get "llbinds/$type/-/[ndcenc $comd]"] {$script [lindex $args 0] [lrange $args 1 end]};return}
+}
+proc putloglev {lev ch msg} {
+	# punt
+    foreach level [split $lev {}] {
+	 	firellmbind [curctx sock] log - [format "%s %s" $ch $level] $level $ch $msg
+		firellbind [curctx sock] logall - - $level $ch $msg
+	 	firellmbind - log - [format "%s %s" $ch $level] [curctx net] $level $ch $msg
+		firellbind - logall - - [curctx net] $level $ch $msg
+	}
+}
+proc putlog {msg} {putloglev o * $msg}

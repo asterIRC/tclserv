@@ -8,7 +8,7 @@ package require sha1
 
 source b64.tcl
 
-proc pwhash {pass} {
+proc pwhash.SHA1 {pass} {
 	global b64
 	set hash [::sha1::sha1 -hex $pass]
 	return "SHA1/$hash"
@@ -90,7 +90,19 @@ if {[file exists services.db]} {
 set globwd [pwd]
 set gettext [list]
 
+proc outputbotnick {var no oper} {
+	upvar $var v
+	set v [curctx user]
+}
+
+proc showcontexts {var no oper} {
+	upvar $var v
+#	puts stdout "curctx is [curctx unum]@[curctx net]"
+}
+
 trace add variable nd [list write unset] [list save.db [format "%s/%s" [pwd] services.db]]
+trace add variable botnick [list read] [list outputbotnick]
+trace add variable globuctx [list read write] [list showcontexts]
 
 
 #::tie::tie nd file services.db

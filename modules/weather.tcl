@@ -49,7 +49,7 @@ proc weatherserv.oneintro {headline block} {
 		if {[string first [weatherserv.find6sid $net $nsserv] [% nick2uid $nickserv]] == 0} {
 			% privmsg $ourid $nickserv $nspass
 		} {
-			% privmsg $ourid $logchan [gettext weatherserv.impostornickserv $nickserv [$::nettype($net) nick2uid $n $nickserv] $nsserv [weatherserv.find6sid $net $nsserv]]
+			% privmsg $ourid $logchan [gettext weatherserv.impostornickserv $nickserv [nick2uid $nickserv] $nsserv [weatherserv.find6sid $net $nsserv]]
 		}
 	}
 	after 650 [list % putjoin $ourid $logchan]

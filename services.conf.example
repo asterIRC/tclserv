@@ -1,12 +1,14 @@
 # TCLServ Config File
+# This is a valid Tcl script when sourced by TCLServ
 
-# needs prefix for ts6
+# needs prefix for ts6; this example is for irca. Give it the isupport from your ircd if you are running some other TS6.
 network "pand" "services.invalid" {
 	host 127.0.0.1 port +6697
 	numeric 53
 	pass	link
 	proto	ts6
 	prefix	{*~&@%+ yqaohv}
+	isupport	"CHANMODES=beIM,k,flj,CDFQRTXcgimnprstu CHANLIMIT=&'#+\"1234567890:100 PREFIX=(yqaohv)*~&@%+ MAXLIST=beIM:100 MODES=4 NETWORK=Pandersticks STATUSMSG=@ PRIVILEGEMSG=@,.,qaohv SJOIN=(yqaohv)*~&@%+"
 }
 
 #old;
@@ -19,6 +21,7 @@ network "pand" "services.invalid" {
 
 loadmodule debugserv
 loadmodule quoteserv
+loadmodule chanserv
 
 # module confs after here, load before here
 
@@ -30,22 +33,37 @@ debugserv "pand" {
 	modes	+oiS
 	comment "Or +oiDS if you dont want it to hear channel convos"
 	comment "idcommand is obvious."
+	realname	"Depanner"
 	nickserv	"NickServ"
 	nsserv	services.umbrellix.net
 	idcommand	"IDENTIFY InvictusWAUS None"
 }
 
-
-quoteserv "umb" {
+quoteserv "pand" {
 	logchan	#services
 	nick	QuoteServ
 	ident	Quote
 	host	Umbrellix/Special/TclServ/QuoteServ
 	modes	+oiS
+	realname	"Quotes Services"
 	comment "Or +oiDS if you dont want it to hear channel convos"
 	comment "NSPass can be a username space password, if your nickserv is an atheme nickserv."
 	nickserv	"NickServ"
 	nsserv	services.umbrellix.net
 	idcommand	"IDENTIFY InvictusWAUS 5467"
 	operflags	"oper:quote,oper:admin"
+}
+
+# Syntax for ChanServ's header is different.
+# Instead of just being  network, it is network servicename.
+# This is because ChanServ is not ChanServ, but a script runner.
+# the config is referenced relative to the working directory when you
+# start TclServ.
+chanserv "pand" "ChanServ" {
+	nick	ChanServ
+	ident	Channel
+	host	Services.Umbrellix.Net
+	modes	+oiS
+	config	chanserv.conf
+	realname	"Channels Services"
 }

@@ -1,0 +1,128 @@
+Hi, I'm ellenor@umbrellix.net, and I figured I needed to explain this disaster.
+
+ [perihelion ellenor]~/src/asterIRC/tclserv/modules $ ls -lah
+ total 97
+ drwxr-xr-x   2 ellenor  other         16 Oct  7 22:58 .
+ drwxr-xr-x   7 ellenor  other         23 Oct  9 15:40 ..
+ -rwxr-xr-x   1 ellenor  other        209 Oct  6 00:02 bmotion.disabled
+ -rwxr-xr-x   1 ellenor  other      17.2K Oct  7 22:43 chanserv.disabled
+ -rw-r--r--   1 ellenor  other      2.83K Oct  7 22:58 chanserv.tcl
+ -rw-r--r--   1 ellenor  other      5.01K Oct  6 00:02 debugserv.tcl
+ -rwxr-xr-x   1 ellenor  other      3.73K Oct  6 00:02 gateway.disabled
+ -rwxr-xr-x   1 ellenor  other      2.87K Oct  6 00:02 limitserv.disabled
+ -rwxr-xr-x   1 ellenor  other      13.7K Oct  6 00:02 nope.egg.nope
+ -rwxr-xr-x   1 ellenor  other      4.12K Oct  6 00:02 quote.disabled
+ -rw-r--r--   1 ellenor  other      13.8K Oct  6 00:02 quoteserv.tcl
+ -rwxr-xr-x   1 ellenor  other        534 Oct  6 00:02 relayserv.disabled
+ -rwxr-xr-x   1 ellenor  other      2.06K Oct  6 00:02 thcserv.disabled
+ -rwxr-xr-x   1 ellenor  other      3.54K Oct  6 00:02 trigserv.disabled
+ -rwxr-xr-x   1 ellenor  other      12.9K Oct  6 00:02 weather.disabled
+ -rw-r--r--   1 ellenor  other      16.6K Oct  6 00:02 weather.tcl
+
+ Figure 1. $PROJECT_ROOT/modules/
+
+In figure 1, you can see that there are 10 disabled modules (one of which has
+a comical name owing to that it's an ancestor of, I believe, 
+core/*-eggcom.tcl). Many of these are services for the old API, which used
+a different structure of boilerplate code which you can see in
+modules/chanserv.disabled. That was also a multi-network API, but it was not
+actually working for TclServ anymore, so it has been migrated to the version
+2 API which you can see in all of the modules whose extension is .tcl.
+
+ proc confighandler {servicename defdbname headline block} {
+     set net [lindex $headline 0]
+     set nsock $::sock($net)
+     dictassign $block nick nick ident ident host host realname realname
+     if {[llength [tnda get "service/$net/$servicename/config"]] != 0} {
+         return -code error "<$servicename> O damn, I'm already loaded for $net!
+     }
+     tnda set "service/$net/$servicename/config" $block
+     if {[tnda get "service/$net/$servicename/config/dbname"] == ""} {
+         tnda set "service/$net/$servicename/dbname" $defdbname
+     }
+     setctx $net
+     if {[% intclient2uid [tnda get "service/$net/$servicename/ourid"]] == ""} {% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* $servicename *" : $realname}] $modes; set connected "Connected"} {set connected "Already connected"}
+     set ouroid [tnda get "service/$net/$servicename/ourid"]
+     if {[info exists ourid]} {tnda set "service/$net/$servicename/ourid" $ourid} {set ourid [tnda get "service/$net/$servicename/ourid"]}
+     puts stdout [format "%s for %s: %s %s %s" $connected $net $nick $ident $host]
+ }
+
+ Figure 2. Suggested new structure of the boilerplate code for handling a
+ configuration block.
+
+The code in Figure 2, for reference, is part of the boilerplate code that is
+usually used by API level 2 modules.
+
+ $::maintype sendUid $::sock($::cs(netname)) $cs(nick) $cs(ident) $cs(host) $cs(host) 77 "Channels Server"
+ bind $::sock($::cs(netname)) msg 77 "register" regchan
+ bind $::sock($::cs(netname)) msg 77 "adduser" adduserchan
+ bind $::sock($::cs(netname)) msg 77 "users" lsuchan
+ bind $::sock($::cs(netname)) msg 77 "lsu" lsuchan
+ bind $::sock($::cs(netname)) msg 77 "convertop" convertop
+ #bind $::sock($::cs(netname)) msg 77 "deluser" deluserchan
+ bind $::sock($::cs(netname)) msg 77 "up" upchan
+ bind $::sock($::cs(netname)) pub "-" "@up" upchanfant
+ bind $::sock($::cs(netname)) pub "-" "@rand" randfant
+ bind $::sock($::cs(netname)) pub "-" "@request" requestbot
+ bind $::sock($::cs(netname)) msg 77 "down" downchan
+ bind $::sock($::cs(netname)) msg 77 "hello" regnick
+ bind $::sock($::cs(netname)) msg 77 "chpass" chpassnick
+ bind $::sock($::cs(netname)) msg 77 "login" idnick
+ bind $::sock($::cs(netname)) msg 77 "help" chanhelp
+ bind $::sock($::cs(netname)) msg 77 "topic" chantopic
+ bind $::sock($::cs(netname)) msg 77 "cookie" authin
+ bind $::sock($::cs(netname)) msg 77 "cauth" cookieauthin
+ bind $::sock($::cs(netname)) mode "-" "+" checkop
+ bind $::sock($::cs(netname)) mode "-" "-" checkdeop
+ bind $::sock($::cs(netname)) topic "-" "-" checktopic
+ bind $::sock($::cs(netname)) create "-" "-" checkcreate
+ 
+ Figure 3. chanserv.disabled | head -n 23.
+ Note fixed UID, leaving no room to have two of the module on the same
+ IRC server (though why would you), and fixed variable names, leaving no
+ room to have two of the module in the first place. (in either case you
+ do only load once, and the same code routines are called for every
+ instance of the module). Configuration was simply not flexible to
+ multiple instantiation (which the new boilerplate still is not, but
+ can easily be made so) and was not consolidated into one file, but 2,
+ just as in "Featherdrop" (our attempt at a lightweight Eggdrop replica
+ in Tcl; replaced by adoption of FireEgl's Tcldrop).
+
+The code in figure 3 is representative of a complex service. As a sidenote,
+in modern TclServ, 'bind' is now Eggdrop emulation. 'llbind' would be
+substituted to make that ChanServ (which we on then AsterIRC called 'Mars')
+work on modern Tclserv.
+
+ proc % {c args} {
+     set ul [list [curctx proto] $c [curctx sock]]
+     foreach {a} $args {lappend ul $a}
+     uplevel 1 $ul
+ }
+ 
+ proc @@ {c args} {
+     set ul [list [curctx proto] $c [curctx sock] [curctx unum]]
+     foreach {a} $args {lappend ul $a}
+     uplevel 1 $ul
+ }
+
+ Figure 4. Convenience functions in core/4000-eggcom.tcl
+
+Bizarrely, 4000-eggcom has morphed into a convenience functions module (it is
+a core module and all installations of TclServ must load it, or the bot will
+NOT function correctly) - its name suggests that it should only contain
+eggdrop-compatibility functions, and that was the original purpose of that
+file. By the time you read this file, it'll have been renamed to
+4000-convenience, reflecting its function. Many functions in 4000-convenience
+are obsolete, holdovers from the days of Mars and the old TclServ.
+
+Please see modules/chanserv.tcl to look into efforts to make a more model-
+compliant channels service module, that may eventually implement everything
+that Mars did (including cookie auth, using a different algorithm).
+
+In future, scripts that look like Eggdrop scripts but are only for TclServ
+(the aim being to make it easier to port scripts from Eggdrop to TclServ, not
+necessarily to make them run unmodified) will be in the scripts/ directory,
+as might a way to make some script modules partially work in Eggdrop (by
+translating the %/@@ commands to appropriate puthelps/putwhatevers, and
+blanking the setctx commands if not running in an sBNC (after which our
+inspiration for the context system was drawn)).
