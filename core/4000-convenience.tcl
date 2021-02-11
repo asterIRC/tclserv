@@ -292,7 +292,7 @@ proc @@ {c args} {
 proc getctx {{type net}} {curctx $type}
 
 proc curctx {{type net}} {
-	if {$::globctx == ""} {return ""}
+	if {$::globctx == ""} {return "-"}
 	switch -exact -- [format ".%s" [string tolower $type]] {
 		.sock {
 			return $::sock($::globctx)
@@ -575,12 +575,27 @@ proc deluser {username} {
 	dbase unset usernames [curctx net] $username
 }
 
+proc delhost {username hostmask} {
+	if {![validuser $username]} {return 0}
+	set hmsks [dbase get usernames [curctx net] $username hostmasks
+	set tounset [list]
+	foreach {bindn hm} $hmsks {
+		if {[string tolower $hm] == $hostmask} {lappend tounset $bindn}
+	}
+	foreach {n} $tounset {
+		dbase unset usernames [curctx net] $username hostmasks $n
+	}
+	return 1
+}
+
+proc addhost {username hostmask} {adduser $username $hostmask}
+
 proc adduser {username {hostmask ""}} {
-	if {[validuser $username]} {return 0}
+	#if {[validuser $username]} {return 0}
 	if {$hostmask != ""} {set moretodo 1} {set moretodo 0}
 	while {0!=$moretodo} {
                 set bindnum [rand 1 10000000]
-                if {[dbase get usernames [curctx net] $username]!=""} {} {set moretodo 0}
+                if {[dbase get usernames [curctx net] $username hostmasks $bindnum]==""} {set moretodo 0}
         }
 	if {$hostmask != ""} {dbase set usernames [curctx net] $username hostmasks $bindnum $hostmask}
 	dbase set usernames [curctx net] $username reg 1
@@ -805,18 +820,22 @@ proc onchan {nick chan} {
 }
 
 proc alg {{ha ""}} {
-	if {$ha == ""} {return "SSHA256"} {return $ha}
+	if {$ha == ""} {
+		if {[set ha [cdbase get misc [curctx net] hashing]] != ""} {return $ha}
+		if {[set ha [cdbase get gmisc hashing]] != ""} {return $ha}
+		return "SSHA256"
+	} {return $ha}
 }
 
 proc passwdok {n p} {
 	set isp [dbase get usernames [curctx net] $n pass]
-	set chkp [pwhash.[alg [lindex [split $isp "/"] 0]] $p]
+	set chkp [pwhash [alg [lindex [split $isp "/"] 0]] $p [lindex [split $isp "/"] end-1]]
 	if {$isp==""} {return 1}
 	if {$chkp == $isp} {return 1}
 	return 0
 }
 
-proc usetpass {n p} {
-	set chkp [pwhash.SSHA256 $p]
+proc usetpass {n p s} {
+	set chkp [pwhash [alg] $p $s]
 	dbase get usernames [curctx net] $n pass $chkp
 }

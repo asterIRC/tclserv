@@ -1,9 +1,14 @@
 # TCLServ Config File
 # This is a valid Tcl script when sourced by TCLServ
 
+misc "pand" {
+	hashing	"SSHA256" comment "this is currently the only supported hashing algorithm."
+}
+
 # needs prefix for ts6; this example is for irca. Give it the isupport from your ircd if you are running some other TS6.
 network "pand" "services.invalid" {
 	host 127.0.0.1 port +6697
+	gecos	"QuackServ"
 	numeric 53
 	pass	link
 	proto	ts6
@@ -33,6 +38,8 @@ debugserv "pand" {
 	modes	+oiS
 	comment "Or +oiDS if you dont want it to hear channel convos"
 	comment "idcommand is obvious."
+	comment "Using rehash in its unmodified form requires that you use irca or another ircd that passes oper privileges in a metadata."
+	rehashprivs "oper:quote"
 	realname	"Depanner"
 	nickserv	"NickServ"
 	nsserv	services.umbrellix.net

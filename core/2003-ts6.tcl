@@ -31,7 +31,7 @@ proc ::ts6::b64d {numb} {
 }
 
 proc putl {args} {
-	puts stdout [join $args " "]
+#	puts stdout [join $args " "]
 	puts {*}$args
 }
 
@@ -49,6 +49,10 @@ proc ::ts6::sendUid {sck nick ident host dhost uid {realname "* Unknown *"} {mod
 	} {
 		set sl [format ":%s EUID %s 1 %s %s %s %s 0 %s%s %s * :%s" $sid $nick [clock format [clock seconds] -format %s] $modes $ident $dhost $sid $sendnn $host $realname]
 	}
+	tnda set "login/$::netname($sck)/${sid}${sendnn}" ""
+	tnda set "oper/$::netname($sck)/${sid}${sendnn}" [expr {[string first "o" $modes] != -1 ? 1 : 0}]
+	tnda set "metadata/$::netname($sck)/${sid}${sendnn}" [list]
+	tnda set "certfps/$::netname($sck)/${sid}${sendnn}" ""
 	tnda set "intclient/$::netname($sck)/${sid}${sendnn}" $uid
 	tnda set "nick/$::netname($sck)/${sid}${sendnn}" $nick
 	tnda set "ident/$::netname($sck)/${sid}${sendnn}" $ident
@@ -150,8 +154,9 @@ proc ::ts6::part {sck uid targ msg} {
 	append sendnn $sendid
 	putl $sck [format ":%s%s PART %s :%s" $sid $sendnn $targ $msg]
 	set chan [ndaenc $targ]
-	tnda set "userchan/$::netname($sck)/$sid$sendnn/$chan" 0
-	tnda set "channels/$::netname($sck)/$chan/status/[lindex $comd 0]" ""
+	tnda unset "userchan/$::netname($sck)/$sid$sendnn/$chan"
+	tnda unset "channels/$::netname($sck)/$chan/status/$sid$sendnn"
+	firellbind $sck part "-" "-" [ndadec $chan] ${sid}${sendnn} $msg
 }
 
 proc ::ts6::quit {sck uid msg} {
@@ -160,13 +165,24 @@ proc ::ts6::quit {sck uid msg} {
 	set sendnn [string repeat "A" [expr {6-[string length $sendid]}]]
 	append sendnn $sendid
 	putl $sck [format ":%s%s QUIT :%s" $sid $sendnn $msg]
+	foreach {chan _} [tnda get "userchan/$::netname($sck)/${sid}${sendnn}"] {
+		#firellbind $sck part "-" "-" $sid$sendnn [ndadec $chan] $msg
+		firellbind $sck quit "-" "-" $sid$sendnn [ndadec $chan] $msg
+		tnda unset "userchan/$::netname($sck)/${sid}${sendnn}/$chan"
+		tnda unset "channels/$::netname($sck)/$chan/status/${sid}${sendnn}"
+	}
+	firellbind $sck nquit "-" "-" $sid$sendnn $msg
+	tnda unset "login/$::netname($sck)/${sid}${sendnn}"
+	tnda unset "nick/$::netname($sck)/${sid}${sendnn}"
 	tnda unset "intclient/$::netname($sck)/${sid}${sendnn}"
+	tnda set "oper/$::netname($sck)/${sid}${sendnn}" 0
 	tnda unset "ident/$::netname($sck)/${sid}${sendnn}"
 	tnda unset "rhost/$::netname($sck)/${sid}${sendnn}"
 	tnda unset "vhost/$::netname($sck)/${sid}${sendnn}"
 	tnda unset "rname/$::netname($sck)/${sid}${sendnn}"
 	tnda unset "ipaddr/$::netname($sck)/${sid}${sendnn}"
-	tnda unset "nick/$::netname($sck)/${sid}${sendnn}"
+	tnda set "metadata/$::netname($sck)/${sid}${sendnn}" [list]
+	tnda unset "certfps/$::netname($sck)/${sid}${sendnn}"
 }
 
 proc ::ts6::setacct {sck targ msg} {
@@ -214,10 +230,10 @@ proc ::ts6::putmode {sck uid targ mode {parm ""} {ts ""}} {
 			set state 0
 		} elseif {[string match [format "*%s*" $c] [tnda get "netinfo/$::netname($sck)/chmparm"]] || ($state&&[string match [format "*%s*" $c] [tnda get "netinfo/$::netname($sck)/chmpartparm"]])} {
 			[expr {$state?"::ts6::checkop":"::ts6::checkdeop"}] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] [lindex $comd [incr ctr]]
-#			firellmbind $sck mode - [format "%s %s%s" [string tolower [lindex $comd 3]] [expr {$state ? "+" : "-"}] $c] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] [lindex $comd [incr ctr]]
+			firellmbind $sck mode - [format "%s %s%s" [string tolower [lindex $comd 3]] [expr {$state ? "+" : "-"}] $c] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] [lindex $comd [incr ctr]]
 		} else {
 			[expr {$state?"::ts6::checkop":"::ts6::checkdeop"}] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] [lindex $comd [incr ctr]]
-#			firellmbind $sck mode - [format "%s %s%s" [string tolower [lindex $comd 3]] [expr {$state ? "+" : "-"}] $c] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] ""
+			firellmbind $sck mode - [format "%s %s%s" [string tolower [lindex $comd 3]] [expr {$state ? "+" : "-"}] $c] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] ""
 #			firellmbind $sck mode "-" [expr {$state ? "+" : "-"}] $c [lindex $comd 0] [lindex $comd 3] ""
 		}
 	}
@@ -276,15 +292,16 @@ proc ::ts6::quitstorm {sck sid comment {doinit 1}} {
 proc ::ts6::irc-main {sck} {
 	global sid sock socksid
 	if {[eof $sck]} {
-		puts stdout "We're dead, folks."
+		puts stdout "We're dead, folks. [clock format [clock seconds] -format {%Y%m%d %H:%M.%S}]"
 #		firellbind $sck evnt "-" "ts6.dead" $::netname($sck) $sck
 		firellbind $sck evnt "-" "dead" $::netname($sck) $sck
 		firellbind - evnt "-" "dead" $sck $::netname($sck)
 		close $sck
 	}
+	set ::errorInfo ""
 	gets $sck line
 	setctx $::netname($sck)
-	#puts stdout $line
+	putloglev r * $line
 	set line [string trim $line "\r\n"]
 	set one [string match ":*" $line]
 	set line [string trimleft $line ":"]
@@ -305,7 +322,7 @@ proc ::ts6::irc-main {sck} {
 		"479" {putloglev d * $payload}
 		"PASS" {
 		#	putquick "PRIVMSG #services :$line"
-			puts stdout "we have a winner! $one"
+			#puts stdout "we have a winner! $one"
 			set ssid [string repeat "0" [expr {3-[string length [::ts6::b64e $::sid($sck)]]}]];append ssid [::ts6::b64e $::sid($sck)]
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/uplink" $ssid
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/sid" $payload
@@ -313,7 +330,7 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"SERVER" {
-			puts stdout "we have a winner! $one"
+			#puts stdout "we have a winner! $one"
 #			if {[lindex $comd [expr {$one + 2}]] != 1} {return};#we don't support jupes
 			tnda set "servers/$::netname($sck)/[ndaenc [tnda get "socksid/$::netname($sck)"]]/name" [lindex $comd [expr {$one + 1}]]
 			tnda set "servers/$::netname($sck)/[ndaenc [tnda get "socksid/$::netname($sck)"]]/description" [lindex $comd [expr {$one + 3}]]
@@ -323,7 +340,7 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"SID" {
-			puts stdout "we have a winner! $one"
+			#puts stdout "we have a winner! $one"
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/name" [lindex $comd 2]
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/description" [lindex $comd 5]
 			tnda set "servers/$::netname($sck)/[ndaenc [lindex $comd 4]]/uplink" [lindex $comd 0]
@@ -337,7 +354,7 @@ proc ::ts6::irc-main {sck} {
 			# is it us?
 			if {$failedserver == $ssid} {
 				#yes, it's us.
-				putloglev d * "We're dead, folks."
+				putloglev d * "We're dead, folks. [clock format [clock seconds] -format {%Y%m%d %H:%M:%S}]"
 				firellbind $sck evnt "-" "ts6.dead" $::netname($sck)
 				firellbind $sck evnt "-" "dead" $::netname($sck)
 				firellbind - evnt "-" "dead" $sck $::netname($sck)
@@ -456,7 +473,7 @@ proc ::ts6::irc-main {sck} {
 		}
 
 		"NOTICE" {
-			if {![tnda get "netinfo/$::netname($sck)/connected"]} {return}
+			if {0==[tnda get "netinfo/$::netname($sck)/connected"]} {} {
 			if {[::ts6::validchan $sck [lindex $comd 2]]} {
 				set client chan
 				if {[string index $payload 0] == "\001"} {
@@ -486,6 +503,7 @@ proc ::ts6::irc-main {sck} {
 				#firellbind $sck notc $client [string tolower [lindex [split $payload " "] 0]] [lindex $comd 0] [join [lrange [split $payload " "] 1 end] " "]
 				#firellmbind $sck notcm $client [string tolower [lindex [split $payload " "] 0]] [lindex $comd 0] [join [lrange [split $payload " "] 1 end] " "]
 				#firellbind $sck "evnt" "-" "privnotc" [lindex $comd 0] [lindex $comd 2] $payload
+			}
 			}
 		}
 
@@ -558,10 +576,12 @@ proc ::ts6::irc-main {sck} {
 						# _NOTREACHED
 						set state 0
 					} elseif {[string match [format "*%s*" $c] [tnda get "netinfo/$::netname($sck)/chmparm"]] || ($state&&[string match [format "*%s*" $c] [tnda get "netinfo/$::netname($sck)/chmpartparm"]])} {
+						putloglev d * "check(de)op with parameter"
 						[expr {$state?"::ts6::checkop":"::ts6::checkdeop"}] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] [lindex $comd [incr ctr]]
 						firellmbind $sck mode - [format "%s %s%s" [string tolower [lindex $comd 3]] [expr {$state ? "+" : "-"}] $c] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] [lindex $comd [incr ctr]]
 					} else {
-						[expr {$state?"::ts6::checkop":"::ts6::checkdeop"}] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] [lindex $comd [incr ctr]]
+						putloglev d * "check(de)op without parameter"
+						[expr {$state?"::ts6::checkop":"::ts6::checkdeop"}] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] ""
 						firellmbind $sck mode - [format "%s %s%s" [string tolower [lindex $comd 3]] [expr {$state ? "+" : "-"}] $c] [lindex $comd 0] [lindex $comd 3] [format "%s%s" [expr {$state?"+":"-"}] $c] ""
 #						firellmbind $sck mode "-" [expr {$state ? "+" : "-"}] $c [lindex $comd 0] [lindex $comd 3] ""
 					}
@@ -606,14 +626,21 @@ proc ::ts6::irc-main {sck} {
 			firellmbind $sck part - [format "%s %s!%s@%s" [lindex $comd 2] [% uid2nick $un] [% uid2ident $un] [% uid2host $un]] $un [lindex $comd 2] [lindex $comd 3]
 			firellbind $sck part "-" "-" [lindex $comd 2] [lindex $comd 0] [lindex $comd 3]
 			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
-			tnda set "userchan/$::netname($sck)/[lindex $comd 0]/$chan" 0
-			tnda set "channels/$::netname($sck)/$chan/status/[lindex $comd 0]" ""
+			foreach {c} [split [tnda get "channels/$::netname($sck)/$chan/status/[lindex $comd 0]"] {}] {
+				::ts6::checkdeop [lindex $comd 0] [ndadec $chan] -$c [lindex $comd 0]
+			}
+			tnda unset "userchan/$::netname($sck)/[lindex $comd 0]/$chan"
+			tnda unset "channels/$::netname($sck)/$chan/status/[lindex $comd 0]"
 		}
 
 		"KICK" {
-			firellbind $sck part "-" "-" [lindex $comd 2] [lindex $comd 3] [lindex $comd 4]
+			firellbind $sck kick "-" "-" [lindex $comd 2] [lindex $comd 3] [lindex $comd 4]
 			set chan [string map {/ [} [::base64::encode [string tolower [lindex $comd 2]]]]
-			tnda set "userchan/$::netname($sck)/[lindex $comd 3]/$chan" 0
+			foreach {c} [split [tnda get "channels/$::netname($sck)/$chan/status/[lindex $comd 3]"] {}] {
+				::ts6::checkdeop [lindex $comd 0] [ndadec $chan] -$c [lindex $comd 3]
+			}
+			tnda unset "userchan/$::netname($sck)/[lindex $comd 3]/$chan"
+			tnda unset "channels/$::netname($sck)/$chan/status/[lindex $comd 3]"
 		}
 
 		"NICK" {
@@ -632,6 +659,7 @@ proc ::ts6::irc-main {sck} {
 		#	puts stdout $comd
 		#	puts stdout $modes
 			if {[string first "o" $modes] != -1} {set oper 1}
+			tnda set "login/$::netname($sck)/[lindex $comd $num]" ""
 			if {"*"!=$loggedin} {
 				tnda set "login/$::netname($sck)/[lindex $comd $num]" $loggedin
 			}
@@ -702,40 +730,47 @@ proc ::ts6::irc-main {sck} {
 				putloglev k * [format "Uh-oh, netsplit! %s -> %s has split" $on [::ts6::nick2uid $::netname($sck) $on]]
 			}
 			foreach {chan _} [tnda get "userchan/$::netname($sck)/[lindex $comd 0]"] {
-				firellbind $sck part "-" "-" [ndadec $chan] [lindex $comd 0] $::netname($sck)
-				tnda set "userchan/$::netname($sck)/[lindex $comd 0]/$chan" 0
-				tnda set "channels/$::netname($sck)/$chan/status/[lindex $comd 0]" ""
+				putloglev d * "$chan -> [ndadec $chan]"
+				putloglev d * "[cdbase get channels $::netname($sck) $chan]"
+				foreach {c} [split [cdbase get channels $::netname($sck) $chan status [lindex $comd 0]] {}] {
+					::ts6::checkdeop [lindex $comd 0] [ndadec $chan] -$c [lindex $comd 0]
+					#puts stdout $::errorInfo
+				}
+				firellbind $sck quit "-" "-" [lindex $comd 0] [ndadec $chan] $::netname($sck)
+				tnda unset "userchan/$::netname($sck)/[lindex $comd 0]/$chan"
+				#tnda unset "channels/$::netname($sck)/$chan/status/[lindex $comd 0]"
 			}
 
 			tnda unset "login/$::netname($sck)/[lindex $comd 0]"
 			tnda unset "nick/$::netname($sck)/[lindex $comd 0]"
-			tnda set "oper/$::netname($sck)/[lindex $comd 0]" 0
+			tnda unset "oper/$::netname($sck)/[lindex $comd 0]"
 			tnda unset "ident/$::netname($sck)/[lindex $comd 0]"
 			tnda unset "rhost/$::netname($sck)/[lindex $comd 0]"
 			tnda unset "vhost/$::netname($sck)/[lindex $comd 0]"
 			tnda unset "rname/$::netname($sck)/[lindex $comd 0]"
 			tnda unset "ipaddr/$::netname($sck)/[lindex $comd 0]"
-			tnda set "metadata/$::netname($sck)/[lindex $comd 0]" [list]
+			tnda unset "metadata/$::netname($sck)/[lindex $comd 0]"
 			tnda unset "certfps/$::netname($sck)/[lindex $comd 0]"
-			firellbind $sck quit "-" "-" [lindex $comd 0] $::netname($sck)
+			firellbind $sck nquit - - [lindex $comd 0] $payload
 		}
 
 		"KILL" {
 			foreach {chan _} [tnda get "userchan/$::netname($sck)/[lindex $comd 2]"] {
-				firellbind $sck part "-" "-" [ndadec $chan] [lindex $comd 2]
+				firellbind $sck quit "-" "-" [lindex $comd 2] [ndadec $chan] $payload
 				tnda set "userchan/$::netname($sck)/[lindex $comd 2]/$chan" 0
 			}
 			tnda unset "login/$::netname($sck)/[lindex $comd 2]"
 			tnda unset "nick/$::netname($sck)/[lindex $comd 2]"
-			tnda set "oper/$::netname($sck)/[lindex $comd 2]" 0
+			tnda unset "oper/$::netname($sck)/[lindex $comd 2]"
 			tnda unset "ident/$::netname($sck)/[lindex $comd 2]"
 			tnda unset "ipaddr/$::netname($sck)/[lindex $comd 2]"
 			tnda unset "rhost/$::netname($sck)/[lindex $comd 2]"
 			tnda unset "vhost/$::netname($sck)/[lindex $comd 2]"
 			tnda unset "rname/$::netname($sck)/[lindex $comd 2]"
-			tnda set "metadata/$::netname($sck)/[lindex $comd 2]" [list]
+			tnda unset "metadata/$::netname($sck)/[lindex $comd 2]"
 			tnda unset "certfps/$::netname($sck)/[lindex $comd 2]"
-			firellbind $sck quit "-" "-" [lindex $comd 2] $::netname($sck)
+			#firellbind $sck nquit - - [lindex $comd 2] $payload
+			firellbind $sck nkill - - [lindex $comd 0] [lindex $comd 2] $payload
 		}
 
 		"ERROR" {
@@ -770,8 +805,12 @@ proc ::ts6::irc-main {sck} {
 			putl $sck [format ":%s PONG %s %s" $num $pong [lindex $comd 2]]
 		}
 	}
-	} erreur]
-	if {$erreno != 0} {puts stdout [join [list $erreno $erreur] " "]}
+	} erreur erropts]
+	if {$erreno != 0} {putloglev d * [format "error code %s, output %s while processing %s" $erreno $erreur [join $comd " "]]
+		foreach {li} [split [dict get $erropts -errorinfo] "\r\n"] {
+			putloglev d * [format "error info: %s" $li]
+		}
+	}
 }
 
 # irrelevant parameters should simply be ignored.
@@ -792,12 +831,12 @@ proc ::ts6::login {sck {osid "42"} {password "link"} {servname "net"} {servernam
 	#if {![info exists ::ts6(ownermode)]} {tnda set "pfx/owner" o} {tnda set "pfx/owner" $ownermode)}
 	#if {![info exists ::ts6(protectmode)]} {tnda set "pfx/protect" o} {tnda set "pfx/protect" $protectmode}
 	if {$useeuid == ""} {tnda set "netinfo/$::netname($sck)/euid" 1} {tnda set "netinfo/$::netname($sck)/euid" $useeuid}
-	
-	putl $sck "PASS $password TS 6 :$num"
+
+	putl $sck [format "PASS %s TS 6 :%s" $password $num]
 	putl $sck "CAPAB :UNKLN BAN KLN RSFNC EUID ENCAP IE EX CLUSTER EOPMOD SVS SERVICES QS"
-	putl $sck "SERVER $servername 1 :chary.tcl for Eggdrop and related bots"
-	putl $sck "SVINFO 6 6 0 :[clock format [clock seconds] -format %s]"
-	putl $sck ":$num VERSION"
+	putl $sck [format "SERVER %s 1 :%s" $servername $gecos]
+	putl $sck [format "SVINFO 6 6 0 :%s" [clock format [clock seconds] -format %s]]
+	putl $sck [format ":%s VERSION" $num]
 #	llbind $sck mode - "* +*" ::ts6::checkop
 #	llbind $sck mode - "* -*" ::ts6::checkdeop
 
@@ -870,28 +909,36 @@ proc ::ts6::getcertfp {sck nick} {
 
 proc ::ts6::checkop {f t m p} {
 	set n [curctx net]
-	set mc [string index $m 1]
-	puts stdout [format ":%s MODE %s %s %s" $f $t $m $p]
+	set mc [string index $m end]
+	#puts stdout [format ":%s MODE %s %s %s" $f $t $m $p]
+	putloglev d * "up $mc $f $t $p $n"
 	if {[tnda get "netinfo/$n/pfxchar/$mc"]==""} {::ts6::handlemode $f $t $m $p;return}
-putloglev d * "up $mc $f $t $p $n"
-  set chan [string map {/ [} [::base64::encode [string tolower $t]]]
-  tnda set "channels/$n/$chan/status/$p" [format {%s%s} [string map [list $mc ""] [tnda get "channels/$n/$chan/status/$p"]] $mc]
+	set chan [string map {/ [} [::base64::encode [string tolower $t]]]
+	tnda set "channels/$n/$chan/status/$p" [format {%s%s} [string map [list $mc ""] [tnda get "channels/$n/$chan/status/$p"]] $mc]
+	#puts stdout [format "Now, the state machine for $t looks like:"]
+	#puts stdout [tnda get "channels/$n/$chan"]
 }
 
 proc ::ts6::checkdeop {f t m p} {
 	set n [curctx net]
-	set mc [string index $m 1]
-	puts stdout [format ":%s MODE %s %s %s" $f $t $m $p]
+	set mc [string index $m end]
+#	puts stdout [format ":%s MODE %s %s %s" $f $t $m $p]
+	putloglev d * "down $m ($mc) $f $t $p $n"
 	if {[tnda get "netinfo/$n/pfxchar/$mc"]==""} {::ts6::handlemode $f $t $m $p;return}
-putloglev d * "down $mc $f $t $p $n"
-  set chan [string map {/ [} [::base64::encode [string tolower $t]]]
-  tnda set "channels/$n/$chan/status/$p" [string map [list $mc ""] [tnda get "channels/$n/$chan/status/$p"]]
+	set chan [string map {/ [} [::base64::encode [string tolower $t]]]
+	if {[set thestatus [string map [list $mc ""] [tnda get "channels/$n/$chan/status/$p"]]] != ""} {
+		tnda set "channels/$n/$chan/status/$p" $thestatus
+	} else {
+		tnda unset "channels/$n/$chan/status/$p"
+	}
+	#puts stdout [format "Now, the state machine for $t looks like:"]
+	#puts stdout [tnda get "channels/$n/$chan"]
 }
 
 proc ::ts6::handlemode {from t mode parm} {
 	set n [curctx net]
 	set chan [string map {/ [} [::base64::encode [string tolower $t]]]
-	puts stdout [format ":%s MODE %s %s %s" $from $t $mode $parm]
+#	puts stdout [format ":%s MODE %s %s %s" $from $t $mode $parm]
 	if {[string index $mode 0] == "+"} {set state 1} {set state 0}
 	set mc [string index $mode 1]
 	if {$state} {
@@ -921,9 +968,6 @@ proc ::ts6::handlemode {from t mode parm} {
 			}
 		}
 	}
-	puts stdout [format "Now, the state machine for $t looks like:"]
-	puts stdout [tnda get "channels/$n/$chan"]
-	puts stdout [tnda get "userchan/$n/$chan"]
 }
 
 proc ::ts6::putnow {sck intclient msg} {

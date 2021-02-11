@@ -1,5 +1,18 @@
 # This portion, of course, is available under the MIT license if not bundled with the rest of TclServ.
 
+# just to have sanity here. don't want a {} dict or a bum array
+# this is for the logging algorithm to work once implemented, too, among other important things
+set ::netname(-) -
+#set ::nettype(-) -
+#set ::sock(-) -
+
+set globctx ""
+set globuctx ""
+
+proc curctx {args} {return "-"}
+
+tnda set "llbinds" [list]
+
 proc llbind {sock type client comd script} {
 	set moretodo 1
 	while {0!=$moretodo} {
@@ -33,7 +46,7 @@ proc firellbind {sock type client comd args} {
 					lappend scr $a
 				}
 				if {[set errcode [catch {eval $scr} erre]] > 0} {
-					foreach logline [split [format "in script %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $scr $errcode $erre] "\n"] {
+					foreach logline [split [format "in script %s:\n\nerror code %s, %s\nerror info:\n%s\ncontact script developer for assistance\n" $scr $errcode $::errorInfo $erre] "\n"] {
 						putloglev o * $logline
 					}
 					firellbind $sock evnt - error $erre {*}$scr
@@ -64,7 +77,7 @@ proc firellmbind {sock type client comd args} {
 						lappend scr $a
 					}
 					if {[set errcode [catch {eval $scr} erre]] > 0} {
-						foreach logline [split [format "in script (#%s) %s:\n\nerror code %s, %s\ncontact script developer for assistance\n" $id $scr $errcode $erre] "\n"] {
+						foreach logline [split [format "in script (#%s) %s:\n\nerror code %s, %s\nerror info:\n%s\ncontact script developer for assistance\n" $id $scr $errcode $::errorInfo $erre] "\n"] {
 							putloglev o * $logline
 						}
 						firellbind $sock evnt - error $erre {*}$scr
@@ -81,10 +94,10 @@ proc putloglev {lev ch msg} {
 	set oldglobuctx $globuctx
 	# punt
     foreach level [split $lev {}] {
-	 	firellmbind [curctx sock] log - [format "%s %s" $ch $level] $level $ch $msg
-		firellbind [curctx sock] logall - - $level $ch $msg
-	 	firellmbind - log - [format "%s %s" $ch $level] [curctx net] $level $ch $msg
-		firellbind - logall - - [curctx net] $level $ch $msg
+		catch {firellmbind [curctx sock] log - [format "%s %s" $ch $level] [curctx net] $level $ch $msg}
+		catch {firellbind [curctx sock] logall - - [curctx net] $level $ch $msg}
+		catch {firellmbind - log - [format "%s %s" $ch $level] [curctx net] $level $ch $msg}
+		catch {firellbind - logall - - [curctx net] $level $ch $msg}
 	}
 	set globuctx $oldglobuctx
 }

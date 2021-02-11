@@ -29,11 +29,11 @@ proc mknetwork {headlines block} {
 	set netname [lindex $headlines 0]
 	if {[catch {set ::sock($netname)} result] == 0} {
 		if {![eof $::sock($netname)]} {
-			puts stdout "probably rehashing (connected network block, [tnda get rehashing], $result)"
+			putloglev o * "probably rehashing (connected network block, [tnda get rehashing], $result)"
 			return
 		}
 	}
-	if {[dict exists $block prefixes]} {
+	if {[dict exists $block prefix]} {
 		# only required for ts6
 		set prefixes [split [dict get $block prefix] " "]
 		set pfxl [split [lindex $prefixes 0] {}]
@@ -44,9 +44,16 @@ proc mknetwork {headlines block} {
 			lappend pfx $m
 		}
 		tnda set "netinfo/$netname/prefix" $pfx
+		set pfx [list]
+		foreach {m} $pfxl {p} $pfxr {
+			lappend pfx $p
+			lappend pfx $m
+		}
+		tnda set "netinfo/$netname/pfxchar" $pfx
 	} {
 		# safe defaults, will cover charybdis and chatircd
 		tnda set "netinfo/$netname/prefix" [list @ o % h + v]
+		tnda set "netinfo/$netname/prefix" [list o @ h % v +]
 	}
 	if {[dict exists $block type]} {
 		tnda set "netinfo/$netname/type" [dict get $block type]
@@ -92,7 +99,7 @@ proc mknetwork {headlines block} {
 	}
 	# open a connection
 	set socke [connect $host $port [list $proto irc-main]]
-	after 500 $proto login $socke $numeric $pass $netname $servername
+	after 500 [list $proto login $socke $numeric $pass $netname $servername $block]
 	llbind - dead - $socke [list after 5000 [list mknetwork $headlines $block]]
 	foreach {def} {
 		protectop protecthalfop protectvoice operit autoop autohalfop autovoice bitch halfbitch voicebitch

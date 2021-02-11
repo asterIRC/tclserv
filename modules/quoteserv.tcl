@@ -74,7 +74,7 @@ proc quoteserv.oneintro {headline block} {
 proc qs.pmdo {n i t m} {
 	set whoarewe [tnda get "intclient/$n/$t"]
 	if {$whoarewe != [tnda get "quoteserv/[curctx net]/ourid"]} {return}
-	quoteservdo $n 0 $i $m
+	quoteservdo $n $i 0 $m
 }
 
 proc quoteservjoin {chan {setting 1}} {
@@ -116,7 +116,7 @@ quoteserv.removedcontents ^C14>^C2>^C12>^C Removed quote was: %s
 quoteserv.disabled >>> Sorry, I'm disabled for %s.
 }
 
-proc quoteservdo {n chan from m} {
+proc quoteservdo {n from chan m} {
 	setctx $n
 	set ndacname [string map {/ [} [::base64::encode [string tolower $chan]]]
 	if {![quoteservenabled $chan] && $chan != 0} {return}

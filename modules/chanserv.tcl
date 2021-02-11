@@ -13,11 +13,28 @@
 
 blocktnd chanserv
 
-llbind - evnt - alive chanserv.connect
+set chanservunbindalive [llbind - evnt - alive chanserv.connect]
+set chanservunbindrehash [llbind - evnt - confloaded chanserv.rehash]
 set numversion 1
 
+proc chanserv.rehash {a} {
+#	if {[catch {set oldchanservunbindalive}] == 0} {
+#		unllbind - evnt - alive $::oldchanservunbindalive
+#		unllbind - evnt - confloaded $::oldchanservunbindrehash
+#	}
+	set blocks [tnda get "openconf/[ndcenc chanserv]/blocks"]
+	for {set i 1} {$i < ($blocks + 1)} {incr i} {
+		set netname [string tolower [lindex [tnda get [format "openconf/%s/hdr%s" [ndcenc chanserv] $i]] 0]]
+		if {[catch {set ::sock($netname)} result] == 0} {
+			if {![eof $::sock($netname)]} {
+				after 1000 [list chanserv.oneintro [tnda get [format "openconf/%s/hdr%s" [ndcenc chanserv] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc chanserv] $i]]]
+			}
+		}
+	}
+}
+
 proc chanserv.connect {arg} {
-	putlog [format "there are %s chanserv blocks" [set blocks [tnda get "openconf/[ndcenc chanserv]/blocks"]]]
+	set blocks [tnda get "openconf/[ndcenc chanserv]/blocks"]
 	for {set i 1} {$i < ($blocks + 1)} {incr i} {
 		if {[string tolower [lindex [tnda get [format "openconf/%s/hdr%s" [ndcenc chanserv] $i]] 0]] != [string tolower $arg]} {continue}
 		after 1000 [list chanserv.oneintro [tnda get [format "openconf/%s/hdr%s" [ndcenc chanserv] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc chanserv] $i]]]
@@ -28,12 +45,20 @@ proc cs.confighandler {servicename defdbname headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
 	set servicename [format "%s.%s" $servicename [lindex $headline 1]]
+	setctx $net
 	dictassign $block nick nick ident ident host host modes modes realname realname
-	if {[llength [tnda get "service/$net/$servicename/config"]] != 0} {return -code error "<$servicename> O damn, I'm already loaded for $net!"}
+	#if {[tnda get "service/$net/$servicename/ourid"] != ""} {
+	#	putloglev o * "<$servicename> O damn, I'm already loaded for $net ([tnda get "service/$net/$servicename/ourid"])! Restarting."
+	#	% quit [tnda get "service/$net/$servicename/ourid"] "REHASHED; QUITTING TO REAPPLY CONFIG"
+	#	tnda unset "service/$net/$servicename/ourid"
+	#}
 	tnda set "service/$net/$servicename/config" $block
 	if {[tnda get "service/$net/$servicename/config/dbname"] == ""} {tnda set "service/$net/$servicename/dbname" $defdbname}
-	setctx $net
-	if {[% intclient2uid [tnda get "service/$net/$servicename/ourid"]] == ""} {% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* $servicename *" : $realname}] $modes; set connected "Connected"} {set connected "Already connected"}
+	if {[tnda get "service/$net/$servicename/ourid"] == ""} {
+		% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* $servicename *" : $realname}] $modes; set connected "Connected"
+	} {
+		set connected "Already connected"
+	}
 	set ouroid [tnda get "service/$net/$servicename/ourid"]
 	if {[info exists ourid]} {tnda set "service/$net/$servicename/ourid" $ourid} {set ourid [tnda get "service/$net/$servicename/ourid"]}
 	puts stdout [format "%s for %s: %s %s %s" $connected $net $nick $ident $host]
@@ -42,8 +67,9 @@ proc cs.confighandler {servicename defdbname headline block} {
 
 proc chanserv.oneintro {headline block} {
 	cs.confighandler chanserv chanserv $headline $block
+	#llbind - evnt - confloaded [list chanserv.rehash chanserv chanserv $headline $block]
 	dictassign $headline net network
-	dictassign $block config eggconf nick nick ident username host my-hostname 
+	dictassign $block config eggconf nick nick ident username host my-hostname
 
 	bind time -|- "?0 * * * *" checkchannels
 	bind time -|- "?5 * * * *" checkchannels

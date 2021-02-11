@@ -61,3 +61,10 @@ proc encrypt-v1 {site pass} {
 proc pwhash.SSHA256 {pass {site "a"}} {
  return [format "SSHA256/%s/%s" $site [string map {/ - + _ = {}} [::base64::encode -maxlen 0 -wrapchar "" [encrypt $site $pass]]]]
 }
+
+proc pwhash {args} {
+ if {[llength $args] == 1} {lassign $args pass; set alg SSHA256; set salt a}
+ if {[llength $args] == 2} {lassign $args pass salt; set alg SSHA256}
+ if {[llength $args] == 3} {lassign $args alg pass salt}
+ return [pwhash.$alg $pass $salt]
+}
