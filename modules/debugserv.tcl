@@ -63,6 +63,7 @@ proc debugserv.oneintro {headline block} {
 	                  dnsconf dnsconf dbname dbname
 	if {$dbname == ""} {set dbname debugserv}
 	tnda set "debugserv/$net/rehashprivs" $rehashprivs
+	tnda set "debugserv/$net/tclprivs" $tclprivs
 	tnda set "debugserv/$net/logchan" $logchan
 	#tnda set "debugserv/$net/nspass" $nspass
 	setctx $net
