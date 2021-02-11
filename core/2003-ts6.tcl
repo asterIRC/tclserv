@@ -288,9 +288,9 @@ proc ::ts6::irc-main {sck} {
 #			if {[lindex $comd [expr {$one + 2}]] != 1} {return};#we don't support jupes
 			tnda set "servers/$::netname($sck)/[ndaenc [tnda get "socksid/$::netname($sck)"]]/name" [lindex $comd [expr {$one + 1}]]
 			tnda set "servers/$::netname($sck)/[ndaenc [tnda get "socksid/$::netname($sck)"]]/description" [lindex $comd [expr {$one + 3}]]
-			firellbind $sck evnt "-" "alive" $::netname($sck)
-			firellbind - evnt "-" "alive" $::netname($sck)
-			firellbind $sck evnt "-" "ts6.alive" $::netname($sck)
+#			firellbind $sck evnt "-" "alive" $::netname($sck)
+			if {$one == 0} {firellbind - evnt "-" "alive" $::netname($sck)}
+#			firellbind $sck evnt "-" "ts6.alive" $::netname($sck)
 		}
 
 		"SID" {

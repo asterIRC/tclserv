@@ -40,8 +40,9 @@ proc debugserv.oneintro {headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
 	dictassign $block logchan logchan nick nick ident ident host host modes modes realname realname rehashprivs rehashprivs idcommand nspass nickserv nickserv nsserv nsserv \
-	                  dnsconf dnsconf
+	                  dnsconf dnsconf tclprivs tclprivs
 	tnda set "debugserv/$net/rehashprivs" $rehashprivs
+	tnda set "debugserv/$net/tclprivs" $tclprivs
 	tnda set "debugserv/$net/logchan" $logchan
 	#tnda set "debugserv/$net/nspass" $nspass
 	setctx $net

@@ -39,6 +39,7 @@ proc mysrc {script} {
 
 proc readfile {script} {
 	set fp [open $script r]
+	chan configure $fp -encoding utf-8
 	set ev [read $fp]
 	close $fp
 	return $ev
@@ -64,8 +65,8 @@ proc save.db {name var no oper} {
 	if {$lastsave + 40 > [set now [clock seconds]]} {return} ;#save CPU time by not always saving DB; integrity problems may result
 	# ensure DB save is atomic, so if tclserv is killed during or under 12.5 seconds after save
 	catch [list file rename $name [format "%s.bk%s" $name $now]]
-	set there [open $name [list WRONLY CREAT TRUNC BINARY]]
-	chan configure $there -blocking 0 -buffering full -buffersize 8192
+	set there [open $name [list WRONLY CREAT TRUNC]]
+	chan configure $there -encoding utf-8 -blocking 0 -buffering full -buffersize 8192
 	# should not block for long
 	puts -nonewline $there $db
 	flush $there
@@ -81,10 +82,10 @@ set lastsave [clock seconds]
 
 if {[file exists services.db]} {
 	puts stdout "reading the nda dict"
-	set nd [readbfile services.db]
+	set nd [readfile services.db]
 	puts stdout $nd
 }
-set nd [readbfile services.db]
+#set nd [readfile services.db]
 
 set globwd [pwd]
 set gettext [list]

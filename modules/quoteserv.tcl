@@ -40,7 +40,7 @@ proc quoteserv.oneintro {headline block} {
 	tnda set "quoteserv/[curctx net]/logchan" $logchan
 	#tnda set "quoteserv/[curctx net]/nspass" $nspass
 	setctx $net
-	% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* Debug Service *" : $realname}] $modes
+	% sendUid $nick $ident $host $host [set ourid [% getfreeuid]] [expr {($realname == "") ? "* Quote Service *" : $realname}] $modes
 	tnda set "quoteserv/[curctx net]/ourid" $ourid
 #	llbind $nsock pub - ".metadata" [list quoteserv.pmetadata $net]
 #	llbind $nsock pub - ".rehash" [list quoteserv.crehash $net]

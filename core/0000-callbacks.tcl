@@ -17,7 +17,7 @@ proc unllbindall {sock type client comd} {
 	tnda unset "llbinds/$::netname($sock)/$type/$client/[ndcenc $comd]"
 }
 proc firellbind {sock type client comd args} {
-#	puts stdout "$sock $type $client [ndcenc $comd] $args"
+#	puts stdout "$sock $type $client $comd $args"
 	global globuctx globctx
 	set globctx $::netname($sock)
 	set globuctx $client
