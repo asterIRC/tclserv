@@ -7,6 +7,7 @@ proc miscellany.rehash {a} {
 #		unllbind - evnt - confloaded $::oldmiscellanyunbindrehash
 #	}
 	putlog [format "there are %s miscellany blocks" [set blocks [tnda get "openconf/[ndcenc misc]/blocks"]]]
+	if {$blocks == ""} {return}
 	for {set i 1} {$i < ($blocks + 1)} {incr i} {
 		set netname [string tolower [lindex [tnda get [format "openconf/%s/hdr%s" [ndcenc misc] $i]] 0]]
 		after 1000 [list miscellany.oneintro [tnda get [format "openconf/%s/hdr%s" [ndcenc misc] $i]] [tnda get [format "openconf/%s/n%s" [ndcenc misc] $i]]]
@@ -27,7 +28,7 @@ proc dictassign {dictValue args} {
 		if {[dict exists $dictValue {*}$i]} {
 			set jj [dict get $dictValue {*}$i]
 		} {
-			set jj ""
+			if {![info exists jj]} {set jj ""}
 		}
 	}
 }

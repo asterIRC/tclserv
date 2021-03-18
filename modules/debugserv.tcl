@@ -59,9 +59,9 @@ proc debugserv.armdns {headline block} {
 proc debugserv.oneintro {headline block} {
 	set net [lindex $headline 0]
 	set nsock $::sock($net)
+	lassign [list debugserv DebugServ DebugServ services.invalid +oi "Default Realname - UNCONFIGURED!" "oper:admin" "oper:tcl"] dbname nick ident host modes realname rehashprivs tclprivs
 	dictassign $block logchan logchan nick nick ident ident host host modes modes realname realname rehashprivs rehashprivs idcommand nspass nickserv nickserv nsserv nsserv \
 	                  dnsconf dnsconf dbname dbname
-	if {$dbname == ""} {set dbname debugserv}
 	tnda set "debugserv/$net/rehashprivs" $rehashprivs
 	tnda set "debugserv/$net/tclprivs" $tclprivs
 	tnda set "debugserv/$net/logchan" $logchan

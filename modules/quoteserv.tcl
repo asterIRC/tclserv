@@ -136,6 +136,7 @@ proc quoteservdo {n from chan m} {
 		set targ $chan
 		set disabled 0
 	}
+	puts stdout $subcmd
 	switch -nocase -glob -- $subcmd {
 		"se*" {
 			if {$disabled} {

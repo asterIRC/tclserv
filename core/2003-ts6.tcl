@@ -31,7 +31,7 @@ proc ::ts6::b64d {numb} {
 }
 
 proc putl {args} {
-#	puts stdout [join $args " "]
+	puts stdout [join $args " "]
 	puts {*}$args
 }
 
@@ -818,6 +818,7 @@ proc ::ts6::login {sck {osid "42"} {password "link"} {servname "net"} {servernam
 	set num [string repeat "0" [expr {3-[string length [::ts6::b64e $osid]]}]]
 	append num [::ts6::b64e $osid]
 	global netname sid sock nettype socksid snames
+    lassign [list 1 "Unconfigured"] useeuid gecos
 	dictassign $cfg euid useeuid gecos gecos
 	set snames($sck) $servername
 	set netname($sck) $servname
